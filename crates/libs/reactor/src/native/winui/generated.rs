@@ -1067,6 +1067,15 @@ pub fn set_property(
         }
         (
             Handle::Border(control),
+            PropertyId::BorderIsHitTestVisible,
+            PropertyValue::Bool(value),
+        ) => control
+            .cast::<IUIElement>()
+            .map_err(native_error)?
+            .SetIsHitTestVisible(*value)
+            .map_err(native_error),
+        (
+            Handle::Border(control),
             PropertyId::BorderOpacityTransition,
             PropertyValue::Duration(value),
         ) => {
@@ -3096,6 +3105,9 @@ pub fn clear_property(handle: &Handle, property: PropertyId) -> Result<(), Runti
             .map_err(native_error),
         (Handle::Border(_), PropertyId::BorderBorderBrush) => dependency_object
             .ClearValue(&bindings::Border::BorderBrushProperty().map_err(native_error)?)
+            .map_err(native_error),
+        (Handle::Border(_), PropertyId::BorderIsHitTestVisible) => dependency_object
+            .ClearValue(&bindings::UIElement::IsHitTestVisibleProperty().map_err(native_error)?)
             .map_err(native_error),
         (Handle::Border(control), PropertyId::BorderOpacityTransition) => control
             .cast::<IUIElement>()

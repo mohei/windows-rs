@@ -704,6 +704,7 @@ pub mod public {
         corner_radius: Property<CornerRadius>,
         background: Property<Brush>,
         border_brush: Property<Brush>,
+        is_hit_test_visible: Property<bool>,
         opacity_transition: Property<std::time::Duration>,
         scale: Property<f64>,
         scale_transition: Property<std::time::Duration>,
@@ -806,6 +807,11 @@ pub mod public {
             T: Into<Brush>,
         {
             self.border_brush = Property::from(value.map(Into::into));
+            self
+        }
+        pub fn is_hit_test_visible(mut self, value: impl Into<Option<bool>>) -> Self {
+            let value = value.into();
+            self.is_hit_test_visible = Property::from(value);
             self
         }
         pub fn opacity_transition(mut self, value: impl Into<Option<std::time::Duration>>) -> Self {
@@ -6500,6 +6506,7 @@ pub mod public {
                         corner_radius,
                         background,
                         border_brush,
+                        is_hit_test_visible,
                         opacity_transition,
                         scale,
                         scale_transition,
@@ -6517,6 +6524,7 @@ pub mod public {
                             corner_radius,
                             background,
                             border_brush,
+                            is_hit_test_visible,
                             opacity_transition,
                             scale,
                             scale_transition,
@@ -8170,6 +8178,7 @@ pub mod public {
                         && value.corner_radius == mounted.corner_radius
                         && value.background == mounted.background
                         && value.border_brush == mounted.border_brush
+                        && value.is_hit_test_visible == mounted.is_hit_test_visible
                         && value.opacity_transition == mounted.opacity_transition
                         && f64_property_eq(&value.scale, &mounted.scale)
                         && value.scale_transition == mounted.scale_transition
@@ -9473,6 +9482,13 @@ impl MountedPropsExt for MountedProps {
                             Some(PropertyValueRef::Brush(Brush::Solid(*color)))
                         }
                         Property::Inherited | Property::Set(Brush::Theme(_)) => None,
+                    },
+                );
+                visit(
+                    PropertyId::BorderIsHitTestVisible,
+                    match &values.is_hit_test_visible {
+                        Property::Inherited => None,
+                        Property::Set(value) => Some(PropertyValueRef::Bool(*value)),
                     },
                 );
                 visit(
@@ -12592,6 +12608,7 @@ pub(crate) struct BorderMountedProps {
     corner_radius: Property<CornerRadius>,
     background: Property<Brush>,
     border_brush: Property<Brush>,
+    is_hit_test_visible: Property<bool>,
     opacity_transition: Property<std::time::Duration>,
     scale: Property<f64>,
     scale_transition: Property<std::time::Duration>,
@@ -12606,6 +12623,7 @@ impl PartialEq for BorderMountedProps {
             && self.corner_radius == other.corner_radius
             && self.background == other.background
             && self.border_brush == other.border_brush
+            && self.is_hit_test_visible == other.is_hit_test_visible
             && self.opacity_transition == other.opacity_transition
             && f64_property_eq(&self.scale, &other.scale)
             && self.scale_transition == other.scale_transition
@@ -13767,6 +13785,7 @@ pub enum PropertyId {
     BorderCornerRadius,
     BorderBackground,
     BorderBorderBrush,
+    BorderIsHitTestVisible,
     BorderOpacityTransition,
     BorderScale,
     BorderScaleTransition,
@@ -14919,6 +14938,17 @@ const BORDER_PROPERTIES: &[PropertyDescriptor] = &[
         field: "border_brush",
         value: "Brush",
         interface: "Microsoft.UI.Xaml.Controls.IBorder",
+        clearable: true,
+        feedback: None,
+        feedback_contract: None,
+        observes_feedback: false,
+    },
+    PropertyDescriptor {
+        id: PropertyId::BorderIsHitTestVisible,
+        name: "IsHitTestVisible",
+        field: "is_hit_test_visible",
+        value: "Bool",
+        interface: "Microsoft.UI.Xaml.IUIElement",
         clearable: true,
         feedback: None,
         feedback_contract: None,

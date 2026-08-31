@@ -19009,6 +19009,15 @@ impl IUIElement {
             .ok()
         }
     }
+    pub(crate) fn SetIsHitTestVisible(&self, value: bool) -> windows_core::Result<()> {
+        unsafe {
+            (windows_core::Interface::vtable(self).SetIsHitTestVisible)(
+                windows_core::Interface::as_raw(self),
+                value,
+            )
+            .ok()
+        }
+    }
     pub(crate) fn KeyboardAccelerators(
         &self,
     ) -> windows_core::Result<windows_collections::IVector<KeyboardAccelerator>> {
@@ -19512,7 +19521,8 @@ pub struct IUIElement_Vtbl {
     RenderTransformOrigin: usize,
     SetRenderTransformOrigin: usize,
     IsHitTestVisible: usize,
-    SetIsHitTestVisible: usize,
+    pub SetIsHitTestVisible:
+        unsafe extern "system" fn(*mut core::ffi::c_void, bool) -> windows_core::HRESULT,
     Visibility: usize,
     SetVisibility: usize,
     RenderSize: usize,
@@ -19884,6 +19894,15 @@ pub struct IUIElementStatics_Vtbl {
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
     pub OpacityProperty: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+    ClipProperty: usize,
+    RenderTransformProperty: usize,
+    ProjectionProperty: usize,
+    Transform3DProperty: usize,
+    RenderTransformOriginProperty: usize,
+    pub IsHitTestVisibleProperty: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
@@ -28560,6 +28579,16 @@ impl UIElement {
         Self::IUIElementStatics(|this| unsafe {
             let mut result__ = core::mem::zeroed();
             (windows_core::Interface::vtable(this).OpacityProperty)(
+                windows_core::Interface::as_raw(this),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
+    pub(crate) fn IsHitTestVisibleProperty() -> windows_core::Result<DependencyProperty> {
+        Self::IUIElementStatics(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).IsHitTestVisibleProperty)(
                 windows_core::Interface::as_raw(this),
                 &mut result__,
             )

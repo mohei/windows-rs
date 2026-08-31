@@ -46,7 +46,7 @@ pub struct ExtensionSurface {
     pub name: &'static str,
 }
 pub(crate) const PROJECTED_CONTROL_COUNT: usize = 79usize;
-pub(crate) const PROJECTED_PROPERTY_COUNT: usize = 230usize;
+pub(crate) const PROJECTED_PROPERTY_COUNT: usize = 231usize;
 pub(crate) const PROJECTED_EVENT_COUNT: usize = 63usize;
 pub(crate) const CAPABILITY_PROPERTY_COUNT: usize = 27usize;
 pub(crate) const STRUCTURAL_COUNT: usize = 64usize;
@@ -497,6 +497,14 @@ fn property_border_border_brush(stage: usize) -> View {
         0 | 3 => Grid::new().children((Border::new(),)),
         1 => Grid::new().children((Border::new().border_brush(Color::rgb(32, 64, 96)),)),
         2 => Grid::new().children((Border::new().border_brush(Color::rgb(96, 64, 32)),)),
+        _ => unreachable!(),
+    }
+}
+fn property_border_is_hit_test_visible(stage: usize) -> View {
+    match stage {
+        0 | 3 => Grid::new().children((Border::new(),)),
+        1 => Grid::new().children((Border::new().is_hit_test_visible(true),)),
+        2 => Grid::new().children((Border::new().is_hit_test_visible(false),)),
         _ => unreachable!(),
     }
 }
@@ -4639,6 +4647,13 @@ pub(crate) static SURFACE_CASES: &[SurfaceCase] = &[
         build: property_border_border_brush,
     },
     SurfaceCase {
+        name: "property.Border.IsHitTestVisible",
+        kind: SurfaceKind::Property,
+        stages: 4,
+        subscription_delta: None,
+        build: property_border_is_hit_test_visible,
+    },
+    SurfaceCase {
         name: "property.Border.OpacityTransition",
         kind: SurfaceKind::Property,
         stages: 4,
@@ -7662,6 +7677,15 @@ pub static PROJECTED_PROPERTIES: &[PropertySurface] = &[
         validation: None,
         clearable: true,
         theme_style: true,
+    },
+    PropertySurface {
+        control: "Border",
+        property: "IsHitTestVisible",
+        value: "Bool",
+        adapter: "direct",
+        validation: None,
+        clearable: true,
+        theme_style: false,
     },
     PropertySurface {
         control: "Border",

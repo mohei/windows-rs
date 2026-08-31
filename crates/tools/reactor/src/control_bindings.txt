@@ -536,6 +536,7 @@ Microsoft::UI::Xaml::IFrameworkElement::put_Tag
 Microsoft::UI::Xaml::IScalarTransition::put_Duration
 Microsoft::UI::Xaml::IUIElement::put_AllowDrop
 Microsoft::UI::Xaml::IUIElement::put_CenterPoint
+Microsoft::UI::Xaml::IUIElement::put_IsHitTestVisible
 Microsoft::UI::Xaml::IUIElement::put_OpacityTransition
 Microsoft::UI::Xaml::IUIElement::put_Scale
 Microsoft::UI::Xaml::IUIElement::put_ScaleTransition
@@ -589,6 +590,7 @@ Microsoft::UI::Xaml::Shapes::Shape::StrokeThicknessProperty
 Microsoft::UI::Xaml::TextTrimming
 Microsoft::UI::Xaml::TextWrapping
 Microsoft::UI::Xaml::UIElement::AllowDropProperty
+Microsoft::UI::Xaml::UIElement::IsHitTestVisibleProperty
 Microsoft::UI::Xaml::Vector3Transition::CreateInstance
 Windows::ApplicationModel::DataTransfer::IDataPackageView::{Contains, GetTextAsync, GetStorageItemsAsync}
 Windows::Foundation::Uri::CreateUri

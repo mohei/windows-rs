@@ -129,7 +129,8 @@ theme_style = true
 name = "BorderBrush"
 theme_style = true
 
-
+[[control.property]]
+name = "IsHitTestVisible"
 
 
 
