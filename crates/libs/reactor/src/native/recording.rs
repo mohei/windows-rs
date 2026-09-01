@@ -968,12 +968,23 @@ impl RecordingRuntime {
                     .ok_or(RuntimeError::MissingNode(*target))?
                     .kind;
                 let expected = match kind {
-                    OwnedMenuKind::ButtonFlyout => MountedKind::Button,
-                    OwnedMenuKind::DropDownButtonFlyout => MountedKind::DropDownButton,
-                    OwnedMenuKind::MenuBarItem => MountedKind::MenuBarItem,
+                    OwnedMenuKind::ButtonFlyout => Some(MountedKind::Button),
+                    OwnedMenuKind::DropDownButtonFlyout => Some(MountedKind::DropDownButton),
+                    OwnedMenuKind::MenuBarItem => Some(MountedKind::MenuBarItem),
+                    // Valid on any native element, unlike the other variants
+                    // — see `OwnedMenuKind::ContextFlyout`'s doc comment.
+                    // `target_kind.is_some()` (checked below) is all that
+                    // matters here.
+                    OwnedMenuKind::ContextFlyout => None,
                 };
-                if target_kind != Some(expected) {
-                    return Err(RuntimeError::UnsupportedKind);
+                match expected {
+                    Some(expected) if target_kind != Some(expected) => {
+                        return Err(RuntimeError::UnsupportedKind);
+                    }
+                    None if target_kind.is_none() => {
+                        return Err(RuntimeError::UnsupportedKind);
+                    }
+                    _ => {}
                 }
                 if let Some(items) = items {
                     self.owned_menus

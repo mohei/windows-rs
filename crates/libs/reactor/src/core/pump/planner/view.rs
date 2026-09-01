@@ -431,6 +431,10 @@ impl<R: NativeRuntime> Pump<R> {
                         OwnedMenuKind::DropDownButtonFlyout
                     }
                     NodeKind::Native(MountedKind::MenuBarItem) => OwnedMenuKind::MenuBarItem,
+                    // Any other native element gets a real `UIElement.ContextFlyout`
+                    // (right-click/long-press/Menu-key) rather than being
+                    // rejected — see `OwnedMenuKind::ContextFlyout`'s doc comment.
+                    NodeKind::Native(_) => OwnedMenuKind::ContextFlyout,
                     _ => return Err(PumpError::StructureUnsupported),
                 };
                 tree.set_kind(node, NodeKind::Menu(kind))?;
@@ -2069,6 +2073,7 @@ impl<R: NativeRuntime> Pump<R> {
                         OwnedMenuKind::DropDownButtonFlyout
                     }
                     NodeKind::Native(MountedKind::MenuBarItem) => OwnedMenuKind::MenuBarItem,
+                    NodeKind::Native(_) => OwnedMenuKind::ContextFlyout,
                     _ => return Err(PumpError::StructureUnsupported),
                 };
                 tree.set_kind(node, NodeKind::Menu(kind))?;

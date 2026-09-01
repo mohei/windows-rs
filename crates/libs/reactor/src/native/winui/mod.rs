@@ -2235,6 +2235,12 @@ impl WinUiRuntime {
                                 .and_then(|items| items.Clear())
                                 .map_err(native_error)?;
                         }
+                        OwnedMenuKind::ContextFlyout => {
+                            self.ui_element(previous.target)?
+                                .cast::<IUIElement>()
+                                .and_then(|element| element.SetContextFlyout(None::<&FlyoutBase>))
+                                .map_err(native_error)?;
+                        }
                     }
                 }
                 let Some(items) = items else {
@@ -2275,6 +2281,22 @@ impl WinUiRuntime {
                             &mut revokers,
                         )?;
                         None
+                    }
+                    OwnedMenuKind::ContextFlyout => {
+                        let flyout = MenuFlyout::new().map_err(native_error)?;
+                        build_menu_items(
+                            items,
+                            *owner,
+                            *revision,
+                            &sink,
+                            &flyout.Items().map_err(native_error)?,
+                            &mut revokers,
+                        )?;
+                        self.ui_element(*target)?
+                            .cast::<IUIElement>()
+                            .and_then(|element| element.SetContextFlyout(&flyout))
+                            .map_err(native_error)?;
+                        Some(flyout)
                     }
                 };
                 self.owned_menus.insert(

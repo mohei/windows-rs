@@ -452,4 +452,11 @@ pub enum OwnedMenuKind {
     ButtonFlyout,
     DropDownButtonFlyout,
     MenuBarItem,
+    /// A `Menu` attached via `UIElement.ContextFlyout` rather than a
+    /// click-opened control-specific flyout — opens on right-click,
+    /// touch long-press, or the Menu/Apps key, on whatever native kind the
+    /// target actually is (unlike the other variants, not restricted to a
+    /// specific control). Added for Mokuroll's chrome-mode context menu;
+    /// see its `windows-rs-patch` fork, `mokuroll-patches` branch.
+    ContextFlyout,
 }

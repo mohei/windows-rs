@@ -19018,6 +19018,29 @@ impl IUIElement {
             .ok()
         }
     }
+    // Hand-added (see IButton::SetFlyout above, mirrored exactly) —
+    // `tool_reactor`'s property-schema resolver can't derive a binding for
+    // `ContextFlyout` on its own (its metadata type, `FlyoutBase`, isn't one
+    // of the value kinds the generic `[[control.property]]` path resolves;
+    // attempting that path panics with "unsupported metadata type"), so this
+    // one member is added by hand instead of via `crates/tools/reactor/src/
+    // winui.toml` + regeneration like the rest of this file. Consequence:
+    // running `cargo run -p tool_reactor --quiet` again will silently drop
+    // this method and the matching `SetContextFlyout` vtable field below
+    // (both revert to the plain `usize` placeholder they started as) — if
+    // that ever needs to happen, re-apply this same hand-edit afterward.
+    pub(crate) fn SetContextFlyout<P0>(&self, value: P0) -> windows_core::Result<()>
+    where
+        P0: windows_core::Param<FlyoutBase>,
+    {
+        unsafe {
+            (windows_core::Interface::vtable(self).SetContextFlyout)(
+                windows_core::Interface::as_raw(self),
+                value.param().abi(),
+            )
+            .ok()
+        }
+    }
     pub(crate) fn KeyboardAccelerators(
         &self,
     ) -> windows_core::Result<windows_collections::IVector<KeyboardAccelerator>> {
@@ -19546,7 +19569,12 @@ pub struct IUIElement_Vtbl {
     SetManipulationMode: usize,
     PointerCaptures: usize,
     ContextFlyout: usize,
-    SetContextFlyout: usize,
+    // Hand-typed — see the `impl IUIElement { fn SetContextFlyout }` comment
+    // above for why this isn't generator-derived like its neighbors.
+    pub SetContextFlyout: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
     CompositeMode: usize,
     SetCompositeMode: usize,
     Lights: usize,
