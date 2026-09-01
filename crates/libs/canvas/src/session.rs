@@ -274,27 +274,33 @@ impl<'a> DrawingSession<'a> {
         }
     }
 
+    /// Draws with [`Interpolation::HighQualityCubic`] — the right choice for
+    /// everything this crate's own callers need today (a manga page canvas
+    /// and its thumbnail strip, both quality-sensitive, neither drawing more
+    /// than a handful of bitmaps a frame). A future caller with a different
+    /// tradeoff (e.g. a video frame path drawing at 24-60fps, where
+    /// low-latency `Linear` may matter more than this mode's extra quality)
+    /// should use [`Self::draw_bitmap_with_interpolation`] instead, rather
+    /// than this hardcoded default being changed or parameterized under it.
     pub fn draw_bitmap(&self, bitmap: &Bitmap, dest: &Rect, opacity: f32) {
+        self.draw_bitmap_with_interpolation(bitmap, dest, opacity, Interpolation::HighQualityCubic);
+    }
+
+    /// Same as [`Self::draw_bitmap`], with an explicit [`Interpolation`]
+    /// instead of the hardcoded [`Interpolation::HighQualityCubic`] default.
+    pub fn draw_bitmap_with_interpolation(
+        &self,
+        bitmap: &Bitmap,
+        dest: &Rect,
+        opacity: f32,
+        interpolation: Interpolation,
+    ) {
         unsafe {
             self.context.DrawBitmap(
                 &bitmap.0,
                 Some(&dest.to_abi()),
                 opacity,
-                // Was D2D1_INTERPOLATION_MODE_LINEAR (plain bilinear, a fixed
-                // 2x2-texel sample regardless of how much minification is
-                // happening). Fine for magnification, but that same fixed
-                // sample footprint aliases badly on high-frequency source
-                // detail — a manga screentone/halftone pattern is exactly
-                // that — once `dest` shrinks the image by more than roughly
-                // 2x, producing visible moire. HIGH_QUALITY_CUBIC is D2D's
-                // highest-quality interpolation mode in both directions
-                // (unlike MULTI_SAMPLE_LINEAR, which Microsoft's own docs
-                // recommend specifically for minification and which is not
-                // documented to improve magnification at all) — the extra
-                // GPU cost is immaterial here: this draws at most one
-                // full-canvas bitmap per frame, not a scene with many of
-                // them.
-                D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC,
+                interpolation.to_abi(),
                 None,
                 None,
             );

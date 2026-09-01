@@ -17,6 +17,37 @@ impl AlphaMode {
     }
 }
 
+/// How `DrawingSession::draw_bitmap_with_interpolation` resamples a bitmap
+/// into a destination rect of a different size.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+pub enum Interpolation {
+    /// Plain bilinear (`D2D1_INTERPOLATION_MODE_LINEAR`) — a fixed 2x2-texel
+    /// sample regardless of how much minification is happening. Cheap, and
+    /// fine for magnification, but that fixed sample footprint aliases
+    /// badly on high-frequency source detail (e.g. a halftone/screentone
+    /// pattern) once the destination shrinks the source by much more than
+    /// roughly 2x.
+    Linear,
+    /// D2D's highest-quality interpolation mode in both directions
+    /// (`D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC`) — avoids the aliasing
+    /// above, at real but usually immaterial extra GPU cost for anything
+    /// short of many large draws per frame (unlike `MULTI_SAMPLE_LINEAR`,
+    /// which Microsoft's own docs recommend specifically for minification
+    /// and don't document as improving magnification at all, this is the
+    /// one mode documented to help both directions).
+    #[default]
+    HighQualityCubic,
+}
+
+impl Interpolation {
+    pub(crate) fn to_abi(self) -> D2D1_INTERPOLATION_MODE {
+        match self {
+            Self::Linear => D2D1_INTERPOLATION_MODE_LINEAR,
+            Self::HighQualityCubic => D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC,
+        }
+    }
+}
+
 /// A rectangle defined by its edges.
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct Rect {
