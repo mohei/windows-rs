@@ -280,7 +280,21 @@ impl<'a> DrawingSession<'a> {
                 &bitmap.0,
                 Some(&dest.to_abi()),
                 opacity,
-                D2D1_INTERPOLATION_MODE_LINEAR,
+                // Was D2D1_INTERPOLATION_MODE_LINEAR (plain bilinear, a fixed
+                // 2x2-texel sample regardless of how much minification is
+                // happening). Fine for magnification, but that same fixed
+                // sample footprint aliases badly on high-frequency source
+                // detail — a manga screentone/halftone pattern is exactly
+                // that — once `dest` shrinks the image by more than roughly
+                // 2x, producing visible moire. HIGH_QUALITY_CUBIC is D2D's
+                // highest-quality interpolation mode in both directions
+                // (unlike MULTI_SAMPLE_LINEAR, which Microsoft's own docs
+                // recommend specifically for minification and which is not
+                // documented to improve magnification at all) — the extra
+                // GPU cost is immaterial here: this draws at most one
+                // full-canvas bitmap per frame, not a scene with many of
+                // them.
+                D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC,
                 None,
                 None,
             );

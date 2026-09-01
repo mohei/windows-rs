@@ -84,6 +84,7 @@ pub struct D2D1_GRADIENT_STOP {
     pub color: D2D_COLOR_F,
 }
 pub type D2D1_INTERPOLATION_MODE = i32;
+pub const D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC: D2D1_INTERPOLATION_MODE = 5;
 pub const D2D1_INTERPOLATION_MODE_LINEAR: D2D1_INTERPOLATION_MODE = 1;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
