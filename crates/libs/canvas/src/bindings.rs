@@ -250,6 +250,7 @@ pub const DXGI_ERROR_DRIVER_INTERNAL_ERROR: windows_core::HRESULT =
 pub type DXGI_FORMAT = i32;
 pub const DXGI_FORMAT_B8G8R8A8_UNORM: DXGI_FORMAT = 87;
 pub const DXGI_FORMAT_UNKNOWN: DXGI_FORMAT = 0;
+pub const DXGI_FORMAT_BC1_UNORM: DXGI_FORMAT = 71;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct DXGI_MATRIX_3X2_F {

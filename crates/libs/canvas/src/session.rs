@@ -333,6 +333,15 @@ impl<'a> DrawingSession<'a> {
         Bitmap::from_bytes(self.context, pixels, width, height, alpha)
     }
 
+    /// Creates a bitmap from BC1 (DXT1)-compressed texel data — see
+    /// [`Bitmap::from_bc1`]'s doc comment for the byte layout and the
+    /// width/height-multiple-of-4 requirement. Draw-only (never a valid
+    /// `with_target` bitmap) — matches Direct2D's own restriction on
+    /// block-compressed formats.
+    pub fn create_bitmap_bc1(&self, compressed: &[u8], width: u32, height: u32) -> Result<Bitmap> {
+        Bitmap::from_bc1(self.context, compressed, width, height)
+    }
+
     pub fn set_transform(&self, transform: &Matrix3x2) {
         let m = match &self.mode {
             Mode::Borrowed { offset } => *transform * *offset,
