@@ -207,6 +207,12 @@ name = "PointerCaptureLost"
 [[control.event]]
 name = "PointerCanceled"
 
+[[control.event]]
+name = "GotFocus"
+
+[[control.event]]
+name = "LostFocus"
+
 [[control]]
 type = "Microsoft.UI.Xaml.Controls.BreadcrumbBar"
 capabilities = ["layout"]

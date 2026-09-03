@@ -47,7 +47,7 @@ pub struct ExtensionSurface {
 }
 pub(crate) const PROJECTED_CONTROL_COUNT: usize = 79usize;
 pub(crate) const PROJECTED_PROPERTY_COUNT: usize = 231usize;
-pub(crate) const PROJECTED_EVENT_COUNT: usize = 63usize;
+pub(crate) const PROJECTED_EVENT_COUNT: usize = 65usize;
 pub(crate) const CAPABILITY_PROPERTY_COUNT: usize = 27usize;
 pub(crate) const STRUCTURAL_COUNT: usize = 64usize;
 pub(crate) const EXTENSION_COUNT: usize = 5;
@@ -2412,6 +2412,30 @@ fn event_border_on_pointer_canceled(stage: usize) -> View {
         _ => unreachable!(),
     }
 }
+fn event_border_on_got_focus(stage: usize) -> View {
+    match stage {
+        0 | 3 => Grid::new().children((Border::new(),)),
+        1 => Grid::new().children((Border::new().on_got_focus(move || {
+            let _ = 0u8;
+        }),)),
+        2 => Grid::new().children((Border::new().on_got_focus(move || {
+            let _ = 1u8;
+        }),)),
+        _ => unreachable!(),
+    }
+}
+fn event_border_on_lost_focus(stage: usize) -> View {
+    match stage {
+        0 | 3 => Grid::new().children((Border::new(),)),
+        1 => Grid::new().children((Border::new().on_lost_focus(move || {
+            let _ = 0u8;
+        }),)),
+        2 => Grid::new().children((Border::new().on_lost_focus(move || {
+            let _ = 1u8;
+        }),)),
+        _ => unreachable!(),
+    }
+}
 fn event_breadcrumb_bar_on_item_clicked(stage: usize) -> View {
     match stage {
         0 | 3 => Grid::new().children((BreadcrumbBar::new(),)),
@@ -4771,6 +4795,20 @@ pub(crate) static SURFACE_CASES: &[SurfaceCase] = &[
         stages: 4,
         subscription_delta: Some(1usize),
         build: event_border_on_pointer_canceled,
+    },
+    SurfaceCase {
+        name: "event.Border.GotFocus",
+        kind: SurfaceKind::Event,
+        stages: 4,
+        subscription_delta: Some(1usize),
+        build: event_border_on_got_focus,
+    },
+    SurfaceCase {
+        name: "event.Border.LostFocus",
+        kind: SurfaceKind::Event,
+        stages: 4,
+        subscription_delta: Some(1usize),
+        build: event_border_on_lost_focus,
     },
     SurfaceCase {
         name: "control.BreadcrumbBar.construct",
@@ -9663,6 +9701,24 @@ pub static PROJECTED_EVENTS: &[EventSurface] = &[
     EventSurface {
         control: "Border",
         event: "PointerCanceled",
+        payload: "Unit",
+        conversion: "Identity",
+        subscription: "callback",
+        delivery: "registration+deterministic",
+        active_property: None,
+    },
+    EventSurface {
+        control: "Border",
+        event: "GotFocus",
+        payload: "Unit",
+        conversion: "Identity",
+        subscription: "callback",
+        delivery: "registration+deterministic",
+        active_property: None,
+    },
+    EventSurface {
+        control: "Border",
+        event: "LostFocus",
         payload: "Unit",
         conversion: "Identity",
         subscription: "callback",

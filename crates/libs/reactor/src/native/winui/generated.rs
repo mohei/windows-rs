@@ -5070,6 +5070,30 @@ pub fn subscribe_event(
                 })
                 .map_err(native_error)
         }
+        (Handle::Border(value), EventId::BorderGotFocus) => {
+            let source = value.cast::<IUIElement>().map_err(native_error)?;
+            source
+                .GotFocus(move |_, _| {
+                    sink.enqueue(node, EventId::BorderGotFocus, revision, EventPayload::Unit);
+                })
+                .map(|revoker| NativeSubscription::Event {
+                    _revoker: revoker,
+                    revision,
+                })
+                .map_err(native_error)
+        }
+        (Handle::Border(value), EventId::BorderLostFocus) => {
+            let source = value.cast::<IUIElement>().map_err(native_error)?;
+            source
+                .LostFocus(move |_, _| {
+                    sink.enqueue(node, EventId::BorderLostFocus, revision, EventPayload::Unit);
+                })
+                .map(|revoker| NativeSubscription::Event {
+                    _revoker: revoker,
+                    revision,
+                })
+                .map_err(native_error)
+        }
         (Handle::BreadcrumbBar(value), EventId::BreadcrumbBarItemClicked) => {
             let source = value.cast::<IBreadcrumbBar>().map_err(native_error)?;
             source

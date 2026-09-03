@@ -16,6 +16,8 @@ pub(crate) struct BorderEvents {
     on_pointer_released: Option<Callback<PointerEventInfo>>,
     on_pointer_capture_lost: Option<Callback<()>>,
     on_pointer_canceled: Option<Callback<()>>,
+    on_got_focus: Option<Callback<()>>,
+    on_lost_focus: Option<Callback<()>>,
 }
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct AutoSuggestBoxEvents {
@@ -946,6 +948,22 @@ pub mod public {
                     .get_or_insert_with(|| std::rc::Rc::new(Default::default())),
             )
             .on_pointer_canceled = Some(callback.into_unit_callback());
+            self
+        }
+        pub fn on_got_focus(mut self, callback: impl IntoUnitCallback) -> Self {
+            std::rc::Rc::make_mut(
+                self.events
+                    .get_or_insert_with(|| std::rc::Rc::new(Default::default())),
+            )
+            .on_got_focus = Some(callback.into_unit_callback());
+            self
+        }
+        pub fn on_lost_focus(mut self, callback: impl IntoUnitCallback) -> Self {
+            std::rc::Rc::make_mut(
+                self.events
+                    .get_or_insert_with(|| std::rc::Rc::new(Default::default())),
+            )
+            .on_lost_focus = Some(callback.into_unit_callback());
             self
         }
     }
@@ -9012,6 +9030,20 @@ pub mod public {
                             .as_ref()
                             .is_some_and(|events| events.on_pointer_canceled.is_some()),
                     );
+                    visit(
+                        EventId::BorderGotFocus,
+                        value
+                            .events
+                            .as_ref()
+                            .is_some_and(|events| events.on_got_focus.is_some()),
+                    );
+                    visit(
+                        EventId::BorderLostFocus,
+                        value
+                            .events
+                            .as_ref()
+                            .is_some_and(|events| events.on_lost_focus.is_some()),
+                    );
                 }
                 Self::BreadcrumbBar(value) => {
                     visit(
@@ -11337,6 +11369,20 @@ impl MountedEventsExt for MountedProps {
                         .as_ref()
                         .is_some_and(|events| events.on_pointer_canceled.is_some()),
                 );
+                visit(
+                    EventId::BorderGotFocus,
+                    values
+                        .events
+                        .as_ref()
+                        .is_some_and(|events| events.on_got_focus.is_some()),
+                );
+                visit(
+                    EventId::BorderLostFocus,
+                    values
+                        .events
+                        .as_ref()
+                        .is_some_and(|events| events.on_lost_focus.is_some()),
+                );
             }
             Self::BreadcrumbBar(values) => {
                 visit(
@@ -11686,6 +11732,16 @@ impl MountedEventsExt for MountedProps {
                 .events
                 .as_ref()
                 .and_then(|events| events.on_pointer_canceled.as_ref())
+                .map(|callback| callback.call(())),
+            (Self::Border(values), EventId::BorderGotFocus, EventPayload::Unit) => values
+                .events
+                .as_ref()
+                .and_then(|events| events.on_got_focus.as_ref())
+                .map(|callback| callback.call(())),
+            (Self::Border(values), EventId::BorderLostFocus, EventPayload::Unit) => values
+                .events
+                .as_ref()
+                .and_then(|events| events.on_lost_focus.as_ref())
                 .map(|callback| callback.call(())),
             (
                 Self::BreadcrumbBar(values),
@@ -14011,6 +14067,8 @@ pub enum EventId {
     BorderPointerReleased,
     BorderPointerCaptureLost,
     BorderPointerCanceled,
+    BorderGotFocus,
+    BorderLostFocus,
     BreadcrumbBarItemClicked,
     TextBoxTextChanged,
     AutoSuggestBoxTextChanged,
@@ -15085,6 +15143,20 @@ const BORDER_EVENTS: &[EventDescriptor] = &[
         id: EventId::BorderPointerCanceled,
         name: "PointerCanceled",
         field: "on_pointer_canceled",
+        payload: "Unit",
+        interface: "Microsoft.UI.Xaml.IUIElement",
+    },
+    EventDescriptor {
+        id: EventId::BorderGotFocus,
+        name: "GotFocus",
+        field: "on_got_focus",
+        payload: "Unit",
+        interface: "Microsoft.UI.Xaml.IUIElement",
+    },
+    EventDescriptor {
+        id: EventId::BorderLostFocus,
+        name: "LostFocus",
+        field: "on_lost_focus",
         payload: "Unit",
         interface: "Microsoft.UI.Xaml.IUIElement",
     },

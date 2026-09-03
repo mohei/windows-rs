@@ -544,6 +544,8 @@ Microsoft::UI::Xaml::IUIElement::{add_DragEnter, remove_DragEnter}
 Microsoft::UI::Xaml::IUIElement::{add_DragLeave, remove_DragLeave}
 Microsoft::UI::Xaml::IUIElement::{add_DragOver, remove_DragOver}
 Microsoft::UI::Xaml::IUIElement::{add_Drop, remove_Drop}
+Microsoft::UI::Xaml::IUIElement::{add_GotFocus, remove_GotFocus}
+Microsoft::UI::Xaml::IUIElement::{add_LostFocus, remove_LostFocus}
 Microsoft::UI::Xaml::IUIElement::{add_PointerCanceled, remove_PointerCanceled}
 Microsoft::UI::Xaml::IUIElement::{add_PointerCaptureLost, remove_PointerCaptureLost}
 Microsoft::UI::Xaml::IUIElement::{add_PointerEntered, remove_PointerEntered}
