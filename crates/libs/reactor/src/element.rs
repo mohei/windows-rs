@@ -1567,9 +1567,19 @@ impl WindowVisuals {
 
     /// Switches the window between its normal presenter and a borderless,
     /// OS-level fullscreen presenter covering the display it currently
-    /// occupies. `client_size`/`constraints` are only meaningful while this
-    /// is `false` — the OS ignores them while a `FullScreenPresenter` is
-    /// active.
+    /// occupies, via `AppWindow.SetPresenterByKind`. `client_size`/
+    /// `constraints` are only meaningful while this is `false` — the OS
+    /// ignores them while a `FullScreenPresenter` is active.
+    ///
+    /// Switching back to `false` (`AppWindowPresenterKind::Default`)
+    /// restores the window's prior windowed position/size automatically —
+    /// this is WinAppSDK's own `AppWindow` presenter-switch behavior, not
+    /// something this binding tracks itself; there is no
+    /// `WINDOWPLACEMENT`-style save/restore anywhere in `apply_window_visuals`.
+    /// Manually verified (mokuroll-app: launch with `ChromeMode::Focus` as
+    /// the initial mode, confirm the window covers the full display with no
+    /// border, then send Escape and confirm it returns to a bordered window
+    /// at a normal size).
     pub fn fullscreen(mut self, fullscreen: bool) -> Self {
         self.fullscreen = fullscreen;
         self
