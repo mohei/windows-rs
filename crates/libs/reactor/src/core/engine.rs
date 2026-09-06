@@ -129,6 +129,7 @@ pub struct Tree {
     root: Option<NodeId>,
     owned_attachments: Rc<HashMap<NodeId, (NodeId, NodeId)>>,
     owned: Rc<HashMap<NodeId, OwnedState>>,
+    owned_menu_targets: Rc<HashMap<NodeId, NodeId>>,
     tree_nodes: Rc<HashMap<NodeId, Rc<Vec<TreeNode>>>>,
     window_declarations: Rc<HashMap<ScopeId, WindowDeclarations>>,
     window_title_bars: Rc<HashMap<NodeId, WindowTitleBarHeight>>,
@@ -218,6 +219,7 @@ impl Tree {
             root: None,
             owned_attachments: Rc::new(HashMap::new()),
             owned: Rc::new(HashMap::new()),
+            owned_menu_targets: Rc::new(HashMap::new()),
             tree_nodes: Rc::new(HashMap::new()),
             window_declarations: Rc::new(HashMap::new()),
             window_title_bars: Rc::new(HashMap::new()),
@@ -447,6 +449,29 @@ impl Tree {
         owned.callback = menu.on_click;
         owned.content = OwnedContent::Menu(menu.items);
         Ok(owned.revision)
+    }
+
+    /// The native node a `.menu(...)` node's flyout is currently attached to
+    /// (the `target` last passed to `Command::SetOwnedMenu`), if any command
+    /// has ever been issued for it yet. Used to detect a target identity
+    /// change (e.g. the owning element was replaced by reconciliation) even
+    /// when the menu's own kind/content happens to be unchanged, so that
+    /// case doesn't get mistaken for a true no-op and skipped.
+    pub fn owned_menu_target(&self, id: NodeId) -> Result<Option<NodeId>, TreeError> {
+        let node = self.arena.get(id)?;
+        if !matches!(node.kind, NodeKind::Menu(_)) {
+            return Err(TreeError::NotComponent);
+        }
+        Ok(self.owned_menu_targets.get(&id).copied())
+    }
+
+    pub fn set_owned_menu_target(&mut self, id: NodeId, target: NodeId) -> Result<(), TreeError> {
+        let node = self.arena.get(id)?;
+        if !matches!(node.kind, NodeKind::Menu(_)) {
+            return Err(TreeError::NotComponent);
+        }
+        Rc::make_mut(&mut self.owned_menu_targets).insert(id, target);
+        Ok(())
     }
 
     pub fn update_command_bar_flyout(
@@ -1151,6 +1176,9 @@ impl Tree {
             }
             if matches!(node.kind, NodeKind::Menu(_) | NodeKind::CommandBarFlyout) {
                 Rc::make_mut(&mut self.owned).remove(&id);
+            }
+            if matches!(node.kind, NodeKind::Menu(_)) {
+                Rc::make_mut(&mut self.owned_menu_targets).remove(&id);
             }
             if node.kind == NodeKind::TreeNodes {
                 Rc::make_mut(&mut self.tree_nodes).remove(&id);

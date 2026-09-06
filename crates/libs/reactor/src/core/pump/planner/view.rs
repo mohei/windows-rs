@@ -438,18 +438,26 @@ impl<R: NativeRuntime> Pump<R> {
                     _ => return Err(PumpError::StructureUnsupported),
                 };
                 // Skip reissuing `SetOwnedMenu` (and bumping the revision) when
-                // neither the menu's content nor its target kind actually
-                // changed since the last render. This node is reconciled on
-                // *every* re-render of whatever owns it (not just when the
-                // menu itself changes), but `Command::SetOwnedMenu`'s handler
-                // unconditionally tears down and rebuilds the native flyout —
-                // including a `ContextFlyout` the user currently has open on
-                // screen. Without this check, any unrelated re-render that
-                // lands between a long-press/right-click opening the popup and
-                // the user's subsequent tap/click on one of its items silently
-                // destroys the popup's backing native object out from under
-                // that pending selection, so the tap does nothing.
+                // neither the menu's content, its target kind, nor the target
+                // node's identity actually changed since the last render. This
+                // node is reconciled on *every* re-render of whatever owns it
+                // (not just when the menu itself changes), but
+                // `Command::SetOwnedMenu`'s handler unconditionally tears down
+                // and rebuilds the native flyout — including a `ContextFlyout`
+                // the user currently has open on screen. Without this check,
+                // any unrelated re-render that lands between a long-press/
+                // right-click opening the popup and the user's subsequent tap/
+                // click on one of its items silently destroys the popup's
+                // backing native object out from under that pending selection,
+                // so the tap does nothing. The target-identity comparison
+                // (rather than kind alone) matters for a `.menu(...)` whose
+                // target isn't a permanently-mounted singleton — e.g. a keyed/
+                // dynamic list row that gets torn down and remounted as a new
+                // native node of the same kind between renders — so that case
+                // still correctly reattaches instead of being mistaken for a
+                // true no-op.
                 if previous_kind == kind
+                    && tree.owned_menu_target(node)? == Some(target)
                     && tree
                         .owned_menu(node)
                         .is_ok_and(|items| *items == menu.items)
@@ -462,6 +470,7 @@ impl<R: NativeRuntime> Pump<R> {
                 tree.set_kind(node, NodeKind::Menu(kind))?;
                 validate_menu_items(&menu.items)?;
                 let revision = tree.update_menu(node, menu.clone())?;
+                tree.set_owned_menu_target(node, target)?;
                 plan.push(Command::SetOwnedMenu {
                     owner: node,
                     target,
@@ -2099,6 +2108,7 @@ impl<R: NativeRuntime> Pump<R> {
                     _ => return Err(PumpError::StructureUnsupported),
                 };
                 tree.set_kind(node, NodeKind::Menu(kind))?;
+                tree.set_owned_menu_target(node, *target)?;
                 let menu = tree.owned_menu(node)?.to_vec();
                 plan.push(Command::SetOwnedMenu {
                     owner: node,

@@ -500,6 +500,7 @@ impl<R: NativeRuntime> Pump<R> {
                     _ => return Err(PumpError::StructureUnsupported),
                 };
                 tree.set_kind(owner, NodeKind::Menu(kind))?;
+                tree.set_owned_menu_target(owner, target)?;
                 plan.push(Command::SetOwnedMenu {
                     owner,
                     target,

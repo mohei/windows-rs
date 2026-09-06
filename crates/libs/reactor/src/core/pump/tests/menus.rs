@@ -111,6 +111,36 @@ fn changed_menu_items_still_reissue_set_owned_menu() {
 }
 
 #[test]
+fn unchanged_context_flyout_menu_reconciliation_does_not_reissue_set_owned_menu() {
+    // Same as `unchanged_menu_reconciliation_does_not_reissue_set_owned_menu`,
+    // but exercising `OwnedMenuKind::ContextFlyout` specifically (a `.menu(...)`
+    // on a non-Button/DropDownButton/MenuBarItem native element, e.g. `Border`)
+    // rather than `ButtonFlyout` — this is the actual kind Mokuroll's
+    // long-press/right-click chrome-mode menu uses, and the one the real touch
+    // bug this fix addresses was found on. `ButtonFlyout`/`ContextFlyout` take
+    // different native API paths (`SetFlyout` vs `SetContextFlyout`), so a
+    // `ButtonFlyout`-only regression test would not catch a divergence here.
+    let callback = Callback::new(|_: String| {});
+    let menu = || Menu::new([MenuItem::item("open", "Open")], callback.clone());
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(Border::new().menu(menu())).unwrap();
+    let owner = pump.root().unwrap();
+    let (_, kind, _, _) = pump.runtime().owned_menu(owner).unwrap();
+    assert_eq!(*kind, OwnedMenuKind::ContextFlyout);
+    let batches_before = pump.runtime().commands().len();
+
+    pump.update_view(Border::new().menu(menu())).unwrap();
+
+    assert_eq!(
+        pump.runtime().commands().len(),
+        batches_before,
+        "reconciling an unchanged ContextFlyout menu must not apply any \
+         native commands: {:?}",
+        pump.runtime().commands()
+    );
+}
+
+#[test]
 fn menu_bar_item_uses_owned_menu_attachment() {
     let mut pump = Pump::new(RecordingRuntime::default());
     pump.mount_view(
@@ -216,6 +246,72 @@ fn menu_target_type_change_detaches_destroys_and_reattaches_with_current_kind() 
         .unwrap();
     assert!(detach < destroy);
     assert!(destroy < attach);
+}
+
+#[test]
+fn menu_target_component_change_with_unchanged_content_still_reattaches() {
+    // Same `OwnedMenuKind` (`ButtonFlyout`) and identical menu content
+    // (items + callback) on both sides — only the target *node*'s identity
+    // changes, via a component swap that replaces the underlying `Button`
+    // with a fresh one. The unchanged-menu skip added for touch long-press
+    // (see `unchanged_menu_reconciliation_does_not_reissue_set_owned_menu`)
+    // must not mistake this for a no-op: comparing kind/content alone would
+    // wrongly skip reattaching, leaving the flyout wired to the now-replaced
+    // native `Button`.
+    struct First;
+    struct Second;
+
+    macro_rules! button_component {
+        ($name:ident, $label:literal) => {
+            impl Component for $name {
+                type Message = ();
+                type Input = ();
+
+                fn create(_input: &(), _context: &ComponentContext<Self>) -> Self {
+                    Self
+                }
+
+                fn update(&mut self, _message: (), _context: &ComponentContext<Self>) {}
+
+                fn view(&self, _input: &(), _context: &mut ViewContext<Self>) -> View {
+                    Button::new().content(TextBlock::new().text($label))
+                }
+            }
+        };
+    }
+    button_component!(First, "First");
+    button_component!(Second, "Second");
+
+    let callback = Callback::new(|_: String| {});
+    let menu = || Menu::new([MenuItem::item("open", "Open")], callback.clone());
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(View::component::<First>(()).menu(menu()))
+        .unwrap();
+    let owner = pump.root().unwrap();
+    let old_target = target(&pump);
+
+    pump.update_view(View::component::<Second>(()).menu(menu()))
+        .unwrap();
+
+    let new_target = target(&pump);
+    assert_ne!(new_target, old_target);
+    let (attached, kind, items, _) = pump.runtime().owned_menu(owner).unwrap();
+    assert_eq!(*attached, new_target);
+    assert_eq!(*kind, OwnedMenuKind::ButtonFlyout);
+    assert_eq!(items, &[MenuItem::item("open", "Open")]);
+    let commands = pump.runtime().commands().last().unwrap();
+    assert!(
+        commands.iter().any(|command| matches!(
+            command,
+            Command::SetOwnedMenu {
+                target,
+                items: Some(_),
+                ..
+            } if *target == new_target
+        )),
+        "a target identity change must still reissue SetOwnedMenu even when \
+         the menu's kind/content are unchanged: {commands:?}"
+    );
 }
 
 #[test]
