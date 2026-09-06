@@ -38,6 +38,79 @@ fn button_menu_mounts_nested_items_and_routes_labels() {
 }
 
 #[test]
+fn unchanged_menu_reconciliation_does_not_reissue_set_owned_menu() {
+    // A `.menu(...)` node is reconciled on every re-render of whatever owns
+    // it, not just when the menu's own content changes (e.g. Mokuroll
+    // recomputes its whole context-menu item list from scratch in every
+    // `view()` call). `Command::SetOwnedMenu`'s native handler unconditionally
+    // tears down and rebuilds the underlying native flyout, so reissuing it on
+    // a no-op reconciliation would destroy a `ContextFlyout` popup a touch/
+    // mouse user currently has open on screen out from under their pending
+    // tap — see TODO.md's "タッチの長押し→コンテキストメニューからのモード
+    // 切り替えが効かない" entry in the Mokuroll repo for the real-world bug
+    // this was found from.
+    let callback = Callback::new(|_: String| {});
+    let menu = || Menu::new([MenuItem::item("open", "Open")], callback.clone());
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(
+        Button::new()
+            .content(TextBlock::new().text("Button"))
+            .menu(menu()),
+    )
+    .unwrap();
+    let batches_before = pump.runtime().commands().len();
+
+    pump.update_view(
+        Button::new()
+            .content(TextBlock::new().text("Button"))
+            .menu(menu()),
+    )
+    .unwrap();
+
+    // `apply_native_commands` skips calling into the runtime entirely for an
+    // empty command list (`publish.rs`), so no new batch appearing here means
+    // the reconciliation produced zero native commands — not just that
+    // `SetOwnedMenu` specifically was absent from a (possibly empty) new
+    // batch.
+    assert_eq!(
+        pump.runtime().commands().len(),
+        batches_before,
+        "reconciling an unchanged menu must not apply any native commands \
+         (in particular, must not reissue SetOwnedMenu): {:?}",
+        pump.runtime().commands()
+    );
+}
+
+#[test]
+fn changed_menu_items_still_reissue_set_owned_menu() {
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(
+        Button::new()
+            .content(TextBlock::new().text("Button"))
+            .menu(Menu::new([MenuItem::item("open", "Open")], |_| {})),
+    )
+    .unwrap();
+
+    pump.update_view(
+        Button::new()
+            .content(TextBlock::new().text("Button"))
+            .menu(Menu::new([MenuItem::item("close", "Close")], |_| {})),
+    )
+    .unwrap();
+
+    let owner = pump.root().unwrap();
+    let (_, _, items, _) = pump.runtime().owned_menu(owner).unwrap();
+    assert_eq!(items, &[MenuItem::item("close", "Close")]);
+    let commands = pump.runtime().commands().last().unwrap();
+    assert!(
+        commands
+            .iter()
+            .any(|command| matches!(command, Command::SetOwnedMenu { items: Some(_), .. })),
+        "reconciling a changed menu must still reissue SetOwnedMenu: {commands:?}"
+    );
+}
+
+#[test]
 fn menu_bar_item_uses_owned_menu_attachment() {
     let mut pump = Pump::new(RecordingRuntime::default());
     pump.mount_view(

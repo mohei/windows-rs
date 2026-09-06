@@ -402,7 +402,7 @@ impl<R: NativeRuntime> Pump<R> {
                 Ok(node)
             }
             ViewKind::Menu { target, menu } => {
-                let NodeKind::Menu(_) = tree.kind(node)? else {
+                let NodeKind::Menu(previous_kind) = tree.kind(node)? else {
                     return Self::replace_planned_view(
                         tree,
                         node,
@@ -437,6 +437,28 @@ impl<R: NativeRuntime> Pump<R> {
                     NodeKind::Native(_) => OwnedMenuKind::ContextFlyout,
                     _ => return Err(PumpError::StructureUnsupported),
                 };
+                // Skip reissuing `SetOwnedMenu` (and bumping the revision) when
+                // neither the menu's content nor its target kind actually
+                // changed since the last render. This node is reconciled on
+                // *every* re-render of whatever owns it (not just when the
+                // menu itself changes), but `Command::SetOwnedMenu`'s handler
+                // unconditionally tears down and rebuilds the native flyout —
+                // including a `ContextFlyout` the user currently has open on
+                // screen. Without this check, any unrelated re-render that
+                // lands between a long-press/right-click opening the popup and
+                // the user's subsequent tap/click on one of its items silently
+                // destroys the popup's backing native object out from under
+                // that pending selection, so the tap does nothing.
+                if previous_kind == kind
+                    && tree
+                        .owned_menu(node)
+                        .is_ok_and(|items| *items == menu.items)
+                    && tree
+                        .owned_callback(node)
+                        .is_ok_and(|callback| *callback == menu.on_click)
+                {
+                    return Ok(node);
+                }
                 tree.set_kind(node, NodeKind::Menu(kind))?;
                 validate_menu_items(&menu.items)?;
                 let revision = tree.update_menu(node, menu.clone())?;
