@@ -221,6 +221,23 @@ impl windows_core::RuntimeName for AppWindowPresenter {
 unsafe impl Send for AppWindowPresenter {}
 unsafe impl Sync for AppWindowPresenter {}
 #[repr(transparent)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct AppWindowPresenterKind(pub i32);
+impl AppWindowPresenterKind {
+    pub const Default: Self = Self(0);
+    pub const CompactOverlay: Self = Self(1);
+    pub const FullScreen: Self = Self(2);
+    pub const Overlapped: Self = Self(3);
+}
+impl windows_core::TypeKind for AppWindowPresenterKind {
+    type TypeKind = windows_core::CopyType;
+}
+impl windows_core::RuntimeType for AppWindowPresenterKind {
+    const SIGNATURE: windows_core::imp::ConstBuffer = windows_core::imp::ConstBuffer::from_slice(
+        b"enum(Microsoft.UI.Windowing.AppWindowPresenterKind;i4)",
+    );
+}
+#[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AppWindowTitleBar(windows_core::IUnknown);
 windows_core::imp::interface_hierarchy!(
@@ -4801,6 +4818,18 @@ impl IAppWindow {
             .ok()
         }
     }
+    pub(crate) fn SetPresenterByKind(
+        &self,
+        appwindowpresenterkind: AppWindowPresenterKind,
+    ) -> windows_core::Result<()> {
+        unsafe {
+            (windows_core::Interface::vtable(self).SetPresenterByKind)(
+                windows_core::Interface::as_raw(self),
+                appwindowpresenterkind,
+            )
+            .ok()
+        }
+    }
 }
 #[repr(C)]
 pub struct IAppWindow_Vtbl {
@@ -4832,6 +4861,12 @@ pub struct IAppWindow_Vtbl {
     pub SetIcon: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+    SetIconWithIconId: usize,
+    SetPresenter: usize,
+    pub SetPresenterByKind: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        AppWindowPresenterKind,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(

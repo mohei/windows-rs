@@ -257,6 +257,7 @@ struct WindowVisualChanges {
     backdrop: bool,
     client_size: bool,
     constraints: bool,
+    fullscreen: bool,
     icon: bool,
     theme: bool,
 }
@@ -452,6 +453,7 @@ fn window_visual_changes(
         backdrop: previous.is_none_or(|previous| previous.backdrop != next.backdrop),
         client_size: previous.is_none_or(|previous| previous.client_size != next.client_size),
         constraints: previous.is_none_or(|previous| previous.constraints != next.constraints),
+        fullscreen: previous.is_none_or(|previous| previous.fullscreen != next.fullscreen),
         icon: next.icon.is_some() && previous.is_none_or(|previous| previous.icon != next.icon),
         theme: previous.is_none_or(|previous| previous.theme != next.theme),
     }
@@ -478,6 +480,7 @@ mod window_visual_tests {
                 backdrop: false,
                 client_size: false,
                 constraints: false,
+                fullscreen: false,
                 icon: false,
                 theme: true,
             }
@@ -508,6 +511,7 @@ mod window_visual_tests {
                 backdrop: false,
                 client_size: true,
                 constraints: false,
+                fullscreen: false,
                 icon: false,
                 theme: false,
             }
@@ -518,6 +522,37 @@ mod window_visual_tests {
                 backdrop: false,
                 client_size: false,
                 constraints: true,
+                fullscreen: false,
+                icon: false,
+                theme: false,
+            }
+        );
+    }
+
+    #[test]
+    fn fullscreen_change_is_independent_of_theme_and_constraints() {
+        let windowed =
+            WindowVisuals::new()
+                .theme(WindowTheme::Dark)
+                .constraints(WindowConstraints {
+                    min_width: Some(400.0),
+                    ..Default::default()
+                });
+        let fullscreen = WindowVisuals::new()
+            .theme(WindowTheme::Dark)
+            .constraints(WindowConstraints {
+                min_width: Some(400.0),
+                ..Default::default()
+            })
+            .fullscreen(true);
+
+        assert_eq!(
+            window_visual_changes(Some(windowed), fullscreen),
+            WindowVisualChanges {
+                backdrop: false,
+                client_size: false,
+                constraints: false,
+                fullscreen: true,
                 icon: false,
                 theme: false,
             }
@@ -773,7 +808,18 @@ impl WinUiRuntime {
                 .map_err(native_error)?;
         }
 
-        if changes.constraints {
+        if changes.fullscreen {
+            let app_window = window_2.AppWindow().map_err(native_error)?;
+            app_window
+                .SetPresenterByKind(if visuals.fullscreen {
+                    AppWindowPresenterKind::FullScreen
+                } else {
+                    AppWindowPresenterKind::Default
+                })
+                .map_err(native_error)?;
+        }
+
+        if changes.constraints && !visuals.fullscreen {
             let app_window = window_2.AppWindow().map_err(native_error)?;
             let presenter = app_window
                 .Presenter()

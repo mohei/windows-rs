@@ -10,8 +10,9 @@ Microsoft::UI::Input::IPointerPointProperties::{get_IsLeftButtonPressed, get_IsM
 Microsoft::UI::Text::ITextDocument::{GetText, SetText}
 Microsoft::UI::Text::TextGetOptions::None
 Microsoft::UI::Text::TextSetOptions::None
+Microsoft::UI::Windowing::AppWindowPresenterKind
 Microsoft::UI::Windowing::IAppWindow2::{get_ClientSize, ResizeClient}
-Microsoft::UI::Windowing::IAppWindow::{get_TitleBar, get_Presenter, get_Size, SetIcon}
+Microsoft::UI::Windowing::IAppWindow::{get_TitleBar, get_Presenter, get_Size, SetIcon, SetPresenterByKind}
 Microsoft::UI::Windowing::IAppWindowTitleBar2::put_PreferredHeightOption
 Microsoft::UI::Windowing::IAppWindowTitleBar3::put_PreferredTheme
 Microsoft::UI::Windowing::IOverlappedPresenter3::{put_PreferredMinimumWidth, put_PreferredMinimumHeight, put_PreferredMaximumWidth, put_PreferredMaximumHeight}

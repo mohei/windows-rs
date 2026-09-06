@@ -1529,6 +1529,7 @@ pub struct WindowVisuals {
     pub(crate) backdrop: WindowBackdrop,
     pub(crate) client_size: Option<(f64, f64)>,
     pub(crate) constraints: Option<WindowConstraints>,
+    pub(crate) fullscreen: bool,
     pub(crate) icon: Option<&'static str>,
     pub(crate) theme: WindowTheme,
 }
@@ -1561,6 +1562,16 @@ impl WindowVisuals {
     pub fn constraints(mut self, constraints: WindowConstraints) -> Self {
         constraints.validate();
         self.constraints = Some(constraints);
+        self
+    }
+
+    /// Switches the window between its normal presenter and a borderless,
+    /// OS-level fullscreen presenter covering the display it currently
+    /// occupies. `client_size`/`constraints` are only meaningful while this
+    /// is `false` — the OS ignores them while a `FullScreenPresenter` is
+    /// active.
+    pub fn fullscreen(mut self, fullscreen: bool) -> Self {
+        self.fullscreen = fullscreen;
         self
     }
 
@@ -1605,6 +1616,13 @@ mod visual_value_tests {
                 .is_err()
             );
         }
+    }
+
+    #[test]
+    fn window_visuals_fullscreen_builder_round_trips() {
+        assert!(!WindowVisuals::new().fullscreen);
+        assert!(WindowVisuals::new().fullscreen(true).fullscreen);
+        assert_ne!(WindowVisuals::new(), WindowVisuals::new().fullscreen(true));
     }
 }
 
