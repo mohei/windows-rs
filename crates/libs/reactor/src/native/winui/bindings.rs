@@ -2630,6 +2630,34 @@ unsafe impl Send for DataPackageView {}
 unsafe impl Sync for DataPackageView {}
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DataTemplate(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    DataTemplate,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+windows_core::imp::required_hierarchy!(DataTemplate, FrameworkTemplate, DependencyObject);
+impl windows_core::RuntimeType for DataTemplate {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, IDataTemplate>();
+}
+unsafe impl windows_core::Interface for DataTemplate {
+    type Vtable = <IDataTemplate as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID = <IDataTemplate as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for DataTemplate {
+    type Target = IDataTemplate;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for DataTemplate {
+    const NAME: &'static str = "Microsoft.UI.Xaml.DataTemplate";
+}
+unsafe impl Send for DataTemplate {}
+unsafe impl Sync for DataTemplate {}
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DataWriter(windows_core::IUnknown);
 windows_core::imp::interface_hierarchy!(
     DataWriter,
@@ -4163,6 +4191,34 @@ impl windows_core::RuntimeName for FrameworkElement {
 }
 unsafe impl Send for FrameworkElement {}
 unsafe impl Sync for FrameworkElement {}
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FrameworkTemplate(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    FrameworkTemplate,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+windows_core::imp::required_hierarchy!(FrameworkTemplate, DependencyObject);
+impl windows_core::RuntimeType for FrameworkTemplate {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, IFrameworkTemplate>();
+}
+unsafe impl windows_core::Interface for FrameworkTemplate {
+    type Vtable = <IFrameworkTemplate as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID = <IFrameworkTemplate as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for FrameworkTemplate {
+    type Target = IFrameworkTemplate;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for FrameworkTemplate {
+    const NAME: &'static str = "Microsoft.UI.Xaml.FrameworkTemplate";
+}
+unsafe impl Send for FrameworkTemplate {}
+unsafe impl Sync for FrameworkTemplate {}
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Geometry(windows_core::IUnknown);
@@ -7913,6 +7969,19 @@ pub struct IDataPackageView_Vtbl {
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    IDataTemplate,
+    IDataTemplate_Vtbl,
+    0x08fa70fa_ee75_5e92_a101_f52d0e1e9fab
+);
+impl windows_core::RuntimeType for IDataTemplate {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct IDataTemplate_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+}
+windows_core::imp::define_interface!(
     IDataWriter,
     IDataWriter_Vtbl,
     0x64b89265_d341_4922_b38a_dd4af8808c4e
@@ -9668,6 +9737,19 @@ pub struct IFrameworkElementStatics_Vtbl {
         *mut core::ffi::c_void,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    IFrameworkTemplate,
+    IFrameworkTemplate_Vtbl,
+    0x0084c7c2_de48_5b0b_8a5a_e4fb76b7f7d1
+);
+impl windows_core::RuntimeType for IFrameworkTemplate {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct IFrameworkTemplate_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
 }
 windows_core::imp::define_interface!(
     IGeometry,
@@ -18854,6 +18936,46 @@ pub struct ITreeView_Vtbl {
         unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    ITreeView2,
+    ITreeView2_Vtbl,
+    0xb947ca7d_0f6f_594c_83ec_14153d343225
+);
+impl windows_core::RuntimeType for ITreeView2 {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+impl ITreeView2 {
+    pub(crate) fn SetItemTemplate<P0>(&self, value: P0) -> windows_core::Result<()>
+    where
+        P0: windows_core::Param<DataTemplate>,
+    {
+        unsafe {
+            (windows_core::Interface::vtable(self).SetItemTemplate)(
+                windows_core::Interface::as_raw(self),
+                value.param().abi(),
+            )
+            .ok()
+        }
+    }
+}
+#[repr(C)]
+pub struct ITreeView2_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    NodeFromContainer: usize,
+    ContainerFromNode: usize,
+    ItemFromContainer: usize,
+    ContainerFromItem: usize,
+    CanDragItems: usize,
+    SetCanDragItems: usize,
+    CanReorderItems: usize,
+    SetCanReorderItems: usize,
+    ItemTemplate: usize,
+    pub SetItemTemplate: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
     ITreeViewFactory,
     ITreeViewFactory_Vtbl,
     0x9c6220be_f9eb_518a_b30e_7e41de5efda9
@@ -19017,6 +19139,25 @@ pub struct ITreeViewStatics_Vtbl {
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    ITreeViewStatics2,
+    ITreeViewStatics2_Vtbl,
+    0xddd01c44_a883_583b_9181_dca583da0ad9
+);
+impl windows_core::RuntimeType for ITreeViewStatics2 {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct ITreeViewStatics2_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    CanDragItemsProperty: usize,
+    CanReorderItemsProperty: usize,
+    pub ItemTemplateProperty: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
     IUIElement,
     IUIElement_Vtbl,
     0xc3c01020_320c_5cf6_9d24_d396bbfa4d8b
@@ -19053,17 +19194,6 @@ impl IUIElement {
             .ok()
         }
     }
-    // Hand-added (see IButton::SetFlyout above, mirrored exactly) —
-    // `tool_reactor`'s property-schema resolver can't derive a binding for
-    // `ContextFlyout` on its own (its metadata type, `FlyoutBase`, isn't one
-    // of the value kinds the generic `[[control.property]]` path resolves;
-    // attempting that path panics with "unsupported metadata type"), so this
-    // one member is added by hand instead of via `crates/tools/reactor/src/
-    // winui.toml` + regeneration like the rest of this file. Consequence:
-    // running `cargo run -p tool_reactor --quiet` again will silently drop
-    // this method and the matching `SetContextFlyout` vtable field below
-    // (both revert to the plain `usize` placeholder they started as) — if
-    // that ever needs to happen, re-apply this same hand-edit afterward.
     pub(crate) fn SetContextFlyout<P0>(&self, value: P0) -> windows_core::Result<()>
     where
         P0: windows_core::Param<FlyoutBase>,
@@ -19661,8 +19791,6 @@ pub struct IUIElement_Vtbl {
     SetManipulationMode: usize,
     PointerCaptures: usize,
     ContextFlyout: usize,
-    // Hand-typed — see the `impl IUIElement { fn SetContextFlyout }` comment
-    // above for why this isn't generator-derived like its neighbors.
     pub SetContextFlyout: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
@@ -28456,6 +28584,16 @@ impl TreeView {
             .and_then(|| windows_core::Type::from_abi(result__))
         })
     }
+    pub(crate) fn ItemTemplateProperty() -> windows_core::Result<DependencyProperty> {
+        Self::ITreeViewStatics2(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).ItemTemplateProperty)(
+                windows_core::Interface::as_raw(this),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
     fn ITreeViewFactory<R, F: FnOnce(&ITreeViewFactory) -> windows_core::Result<R>>(
         callback: F,
     ) -> windows_core::Result<R> {
@@ -28467,6 +28605,13 @@ impl TreeView {
         callback: F,
     ) -> windows_core::Result<R> {
         static SHARED: windows_core::imp::FactoryCache<TreeView, ITreeViewStatics> =
+            windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
+    }
+    fn ITreeViewStatics2<R, F: FnOnce(&ITreeViewStatics2) -> windows_core::Result<R>>(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<TreeView, ITreeViewStatics2> =
             windows_core::imp::FactoryCache::new();
         SHARED.call(callback)
     }

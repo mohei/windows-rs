@@ -137,6 +137,7 @@ pub(crate) enum PropertyAdapter {
     RichEditText,
     RichTextBlocks,
     TreeNodeContent,
+    TreeViewItemTextWrapping,
     Uri,
     VerticalContentAlignment,
     SelectionIndex,
@@ -190,6 +191,7 @@ impl PropertyAdapter {
         const RICH_TEXT_BLOCK: &str = "Microsoft.UI.Xaml.Controls.RichTextBlock";
         const TEXT_BLOCK: &str = "Microsoft.UI.Xaml.Controls.TextBlock";
         const TIME_PICKER: &str = "Microsoft.UI.Xaml.Controls.TimePicker";
+        const TREE_VIEW: &str = "Microsoft.UI.Xaml.Controls.TreeView";
 
         let property = |targets, metadata, value, copy, requirement| {
             PropertyAdapterKind::Property(PropertyAdapterContract {
@@ -350,6 +352,13 @@ impl PropertyAdapter {
                 "SelectionIndex",
                 true,
                 "selection_index requires an I32 SelectedIndex property",
+            ),
+            Self::TreeViewItemTextWrapping => property(
+                OneOf(&[(TREE_VIEW, "ItemTemplate")]),
+                ParamType("Microsoft.UI.Xaml.DataTemplate"),
+                "Bool",
+                true,
+                "tree_view_item_text_wrapping requires TreeView.ItemTemplate",
             ),
             Self::ResourceStyle => PropertyAdapterKind::ResourceStyle,
             Self::ContentDialogResult => {

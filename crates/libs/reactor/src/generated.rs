@@ -4998,6 +4998,7 @@ pub mod public {
     #[derive(Clone, Debug, Default, PartialEq)]
     pub struct TreeView {
         selection_mode: Property<TreeViewSelectionMode>,
+        wrap_item_text: Property<bool>,
         on_item_invoked: Option<Callback<String>>,
         element_state: Option<std::rc::Rc<ElementState>>,
     }
@@ -5008,6 +5009,11 @@ pub mod public {
         pub fn selection_mode(mut self, value: impl Into<Option<TreeViewSelectionMode>>) -> Self {
             let value = value.into();
             self.selection_mode = Property::from(value);
+            self
+        }
+        pub fn wrap_item_text(mut self, value: impl Into<Option<bool>>) -> Self {
+            let value = value.into();
+            self.wrap_item_text = Property::from(value);
             self
         }
         pub fn on_item_invoked(mut self, callback: impl IntoPayloadCallback<String>) -> Self {
@@ -7972,6 +7978,7 @@ pub mod public {
                 Self::TreeView(value) => {
                     let TreeView {
                         selection_mode,
+                        wrap_item_text,
                         on_item_invoked,
                         element_state,
                     } = *value;
@@ -7979,6 +7986,7 @@ pub mod public {
                         kind: MountedKind::TreeView,
                         props: MountedProps::TreeView(std::rc::Rc::new(TreeViewMountedProps {
                             selection_mode,
+                            wrap_item_text,
                             on_item_invoked,
                         })),
                         reference: None,
@@ -8560,6 +8568,7 @@ pub mod public {
                 }
                 (Self::TreeView(value), MountedProps::TreeView(mounted)) => {
                     true && value.selection_mode == mounted.selection_mode
+                        && value.wrap_item_text == mounted.wrap_item_text
                         && value.on_item_invoked == mounted.on_item_invoked
                 }
                 (Self::GridView(value), MountedProps::GridView(mounted)) => {
@@ -11039,6 +11048,13 @@ impl MountedPropsExt for MountedProps {
                         Property::Set(value) => {
                             Some(PropertyValueRef::TreeViewSelectionMode(*value))
                         }
+                    },
+                );
+                visit(
+                    PropertyId::TreeViewItemTemplate,
+                    match &values.wrap_item_text {
+                        Property::Inherited => None,
+                        Property::Set(value) => Some(PropertyValueRef::Bool(*value)),
                     },
                 );
             }
@@ -13580,11 +13596,13 @@ impl PartialEq for ListViewItemMountedProps {
 #[derive(Clone, Debug)]
 pub(crate) struct TreeViewMountedProps {
     selection_mode: Property<TreeViewSelectionMode>,
+    wrap_item_text: Property<bool>,
     on_item_invoked: Option<Callback<String>>,
 }
 impl PartialEq for TreeViewMountedProps {
     fn eq(&self, other: &Self) -> bool {
         true && self.selection_mode == other.selection_mode
+            && self.wrap_item_text == other.wrap_item_text
             && self.on_item_invoked == other.on_item_invoked
     }
 }
@@ -14034,6 +14052,7 @@ pub enum PropertyId {
     ListViewAllowDrop,
     ListViewItemTag,
     TreeViewSelectionMode,
+    TreeViewItemTemplate,
     GridViewSelectedIndex,
     GridViewCanDragItems,
     GridViewCanReorderItems,
@@ -17978,17 +17997,30 @@ const LIST_VIEW_ITEM_PROPERTIES: &[PropertyDescriptor] = &[PropertyDescriptor {
 }];
 const LIST_VIEW_ITEM_EVENTS: &[EventDescriptor] = &[];
 const LIST_VIEW_ITEM_SLOTS: &[SlotDescriptor] = &[];
-const TREE_VIEW_PROPERTIES: &[PropertyDescriptor] = &[PropertyDescriptor {
-    id: PropertyId::TreeViewSelectionMode,
-    name: "SelectionMode",
-    field: "selection_mode",
-    value: "TreeViewSelectionMode",
-    interface: "Microsoft.UI.Xaml.Controls.ITreeView",
-    clearable: true,
-    feedback: None,
-    feedback_contract: None,
-    observes_feedback: false,
-}];
+const TREE_VIEW_PROPERTIES: &[PropertyDescriptor] = &[
+    PropertyDescriptor {
+        id: PropertyId::TreeViewSelectionMode,
+        name: "SelectionMode",
+        field: "selection_mode",
+        value: "TreeViewSelectionMode",
+        interface: "Microsoft.UI.Xaml.Controls.ITreeView",
+        clearable: true,
+        feedback: None,
+        feedback_contract: None,
+        observes_feedback: false,
+    },
+    PropertyDescriptor {
+        id: PropertyId::TreeViewItemTemplate,
+        name: "ItemTemplate",
+        field: "wrap_item_text",
+        value: "Bool",
+        interface: "Microsoft.UI.Xaml.Controls.ITreeView2",
+        clearable: true,
+        feedback: None,
+        feedback_contract: None,
+        observes_feedback: false,
+    },
+];
 const TREE_VIEW_EVENTS: &[EventDescriptor] = &[EventDescriptor {
     id: EventId::TreeViewItemInvoked,
     name: "ItemInvoked",

@@ -79,3 +79,39 @@ fn rejects_duplicate_sibling_keys_at_any_depth() {
         Err(PumpError::DuplicateKey(Key::from("duplicate")))
     );
 }
+
+#[test]
+fn wrap_item_text_mounts_updates_and_clears() {
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(TreeView::new().wrap_item_text(true).nodes(nodes("Root")))
+        .unwrap();
+    let owner = pump.root().unwrap();
+    let target = Pump::<RecordingRuntime>::native_root(&pump.tree, owner).unwrap();
+    assert_eq!(
+        pump.runtime()
+            .node(target)
+            .unwrap()
+            .property(PropertyId::TreeViewItemTemplate),
+        Some(&PropertyValue::Bool(true))
+    );
+
+    pump.update_view(TreeView::new().wrap_item_text(false).nodes(nodes("Root")))
+        .unwrap();
+    assert_eq!(
+        pump.runtime()
+            .node(target)
+            .unwrap()
+            .property(PropertyId::TreeViewItemTemplate),
+        Some(&PropertyValue::Bool(false))
+    );
+
+    pump.update_view(TreeView::new().nodes(nodes("Root")))
+        .unwrap();
+    assert_eq!(
+        pump.runtime()
+            .node(target)
+            .unwrap()
+            .property(PropertyId::TreeViewItemTemplate),
+        None
+    );
+}

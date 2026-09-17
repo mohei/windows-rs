@@ -1490,6 +1490,14 @@ capabilities = ["layout", "enabled"]
 [[control.property]]
 name = "SelectionMode"
 
+# `true` swaps the stock item presenter (one unwrapped line, clipped at the
+# pane edge) for a template that wraps each node's text to at most two lines,
+# ellipsizes the rest, and shows the full text as a tooltip.
+[[control.property]]
+name = "ItemTemplate"
+field = "wrap_item_text"
+adapter = "tree_view_item_text_wrapping"
+
 [[control.event]]
 name = "ItemInvoked"
 property = "InvokedItem"

@@ -108,6 +108,7 @@ pub(crate) fn generate_control_bindings_filter(schema: &ResolvedSchema) -> Strin
                 | Some(PropertyAdapter::RichTextBlocks)
                 | Some(PropertyAdapter::SelectionIndex)
                 | Some(PropertyAdapter::TreeNodeContent)
+                | Some(PropertyAdapter::TreeViewItemTextWrapping)
                 | Some(PropertyAdapter::Uri)
                 | Some(PropertyAdapter::VerticalContentAlignment)
                 | None => {}
@@ -2045,6 +2046,24 @@ fn generate_set_property(control: &ResolvedControl, property: &ResolvedProperty)
                     blocks.Append(&native).map_err(native_error)?;
                 }
                 Ok(())
+            }
+        };
+    }
+    if property.adapter == Some(PropertyAdapter::TreeViewItemTextWrapping) {
+        return quote! {
+            (
+                Handle::#control_name(control),
+                PropertyId::#property_id,
+                PropertyValue::Bool(value),
+            ) => {
+                let control = control.cast::<#interface>().map_err(native_error)?;
+                if *value {
+                    control
+                        .#setter(&wrapped_tree_view_item_template()?)
+                        .map_err(native_error)
+                } else {
+                    control.#setter(None::<&DataTemplate>).map_err(native_error)
+                }
             }
         };
     }

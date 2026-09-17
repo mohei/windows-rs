@@ -313,6 +313,7 @@ Microsoft::UI::Xaml::Controls::IToggleSwitch::put_IsOn
 Microsoft::UI::Xaml::Controls::IToggleSwitch::put_OffContent
 Microsoft::UI::Xaml::Controls::IToggleSwitch::put_OnContent
 Microsoft::UI::Xaml::Controls::IToggleSwitch::{add_Toggled, remove_Toggled}
+Microsoft::UI::Xaml::Controls::ITreeView2::put_ItemTemplate
 Microsoft::UI::Xaml::Controls::ITreeView::put_SelectionMode
 Microsoft::UI::Xaml::Controls::ITreeView::{add_ItemInvoked, remove_ItemInvoked}
 Microsoft::UI::Xaml::Controls::ITreeViewItemInvokedEventArgs::get_InvokedItem
@@ -512,6 +513,7 @@ Microsoft::UI::Xaml::Controls::ToggleSwitch::CreateInstance
 Microsoft::UI::Xaml::Controls::ToggleSwitch::IsOnProperty
 Microsoft::UI::Xaml::Controls::ToolTip::CreateInstance
 Microsoft::UI::Xaml::Controls::TreeView::CreateInstance
+Microsoft::UI::Xaml::Controls::TreeView::ItemTemplateProperty
 Microsoft::UI::Xaml::Controls::TreeView::SelectionModeProperty
 Microsoft::UI::Xaml::Controls::TreeViewSelectionMode
 Microsoft::UI::Xaml::Controls::UIElementCollection::{}

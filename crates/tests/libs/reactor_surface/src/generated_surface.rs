@@ -46,7 +46,7 @@ pub struct ExtensionSurface {
     pub name: &'static str,
 }
 pub(crate) const PROJECTED_CONTROL_COUNT: usize = 79usize;
-pub(crate) const PROJECTED_PROPERTY_COUNT: usize = 231usize;
+pub(crate) const PROJECTED_PROPERTY_COUNT: usize = 232usize;
 pub(crate) const PROJECTED_EVENT_COUNT: usize = 65usize;
 pub(crate) const CAPABILITY_PROPERTY_COUNT: usize = 27usize;
 pub(crate) const STRUCTURAL_COUNT: usize = 64usize;
@@ -2062,6 +2062,14 @@ fn property_tree_view_selection_mode(stage: usize) -> View {
         0 | 3 => Grid::new().children((TreeView::new(),)),
         1 => Grid::new().children((TreeView::new().selection_mode(TreeViewSelectionMode::None),)),
         2 => Grid::new().children((TreeView::new().selection_mode(TreeViewSelectionMode::Single),)),
+        _ => unreachable!(),
+    }
+}
+fn property_tree_view_wrap_item_text(stage: usize) -> View {
+    match stage {
+        0 | 3 => Grid::new().children((TreeView::new(),)),
+        1 => Grid::new().children((TreeView::new().wrap_item_text(true),)),
+        2 => Grid::new().children((TreeView::new().wrap_item_text(false),)),
         _ => unreachable!(),
     }
 }
@@ -7198,6 +7206,13 @@ pub(crate) static SURFACE_CASES: &[SurfaceCase] = &[
         build: property_tree_view_selection_mode,
     },
     SurfaceCase {
+        name: "property.TreeView.ItemTemplate",
+        kind: SurfaceKind::Property,
+        stages: 4,
+        subscription_delta: None,
+        build: property_tree_view_wrap_item_text,
+    },
+    SurfaceCase {
         name: "event.TreeView.ItemInvoked",
         kind: SurfaceKind::Event,
         stages: 4,
@@ -9449,6 +9464,15 @@ pub static PROJECTED_PROPERTIES: &[PropertySurface] = &[
         property: "SelectionMode",
         value: "TreeViewSelectionMode",
         adapter: "direct",
+        validation: None,
+        clearable: true,
+        theme_style: false,
+    },
+    PropertySurface {
+        control: "TreeView",
+        property: "ItemTemplate",
+        value: "Bool",
+        adapter: "TreeViewItemTextWrapping",
         validation: None,
         clearable: true,
         theme_style: false,

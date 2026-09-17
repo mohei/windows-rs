@@ -2859,6 +2859,22 @@ pub fn set_property(
             })
             .map_err(native_error),
         (
+            Handle::TreeView(control),
+            PropertyId::TreeViewItemTemplate,
+            PropertyValue::Bool(value),
+        ) => {
+            let control = control.cast::<ITreeView2>().map_err(native_error)?;
+            if *value {
+                control
+                    .SetItemTemplate(&wrapped_tree_view_item_template()?)
+                    .map_err(native_error)
+            } else {
+                control
+                    .SetItemTemplate(None::<&DataTemplate>)
+                    .map_err(native_error)
+            }
+        }
+        (
             Handle::GridView(control),
             PropertyId::GridViewSelectedIndex,
             PropertyValue::SelectionIndex(value),
@@ -3807,6 +3823,9 @@ pub fn clear_property(handle: &Handle, property: PropertyId) -> Result<(), Runti
             .map_err(native_error),
         (Handle::TreeView(_), PropertyId::TreeViewSelectionMode) => dependency_object
             .ClearValue(&bindings::TreeView::SelectionModeProperty().map_err(native_error)?)
+            .map_err(native_error),
+        (Handle::TreeView(_), PropertyId::TreeViewItemTemplate) => dependency_object
+            .ClearValue(&bindings::TreeView::ItemTemplateProperty().map_err(native_error)?)
             .map_err(native_error),
         (Handle::GridView(_), PropertyId::GridViewSelectedIndex) => dependency_object
             .ClearValue(&bindings::Selector::SelectedIndexProperty().map_err(native_error)?)

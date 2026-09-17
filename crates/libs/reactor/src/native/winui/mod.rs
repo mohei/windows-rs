@@ -274,6 +274,31 @@ fn set_resource_style(
         .map_err(native_error)
 }
 
+/// The `TreeView::wrap_item_text(true)` item template. In node mode each
+/// item's data context is its `TreeViewNode`, so `{Binding Content}` reads
+/// the same boxed label string `build_tree_node` stores. Loaded once per
+/// thread: a `DataTemplate` is a factory, safe to share between trees.
+fn wrapped_tree_view_item_template() -> Result<DataTemplate, RuntimeError> {
+    thread_local! {
+        static TEMPLATE: RefCell<Option<DataTemplate>> = const { RefCell::new(None) };
+    }
+    TEMPLATE.with(|cell| {
+        if let Some(template) = cell.borrow().as_ref() {
+            return Ok(template.clone());
+        }
+        let template = XamlReader::Load(
+            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>\
+             <TextBlock Text='{Binding Content}' TextWrapping='Wrap' MaxLines='2' \
+             TextTrimming='CharacterEllipsis' ToolTipService.ToolTip='{Binding Content}'/>\
+             </DataTemplate>",
+        )
+        .and_then(|value| value.cast::<DataTemplate>())
+        .map_err(native_error)?;
+        *cell.borrow_mut() = Some(template.clone());
+        Ok(template)
+    })
+}
+
 pub(crate) fn validate_native_image_uri(value: &str) -> windows_core::Result<()> {
     Uri::CreateUri(value).map(drop)
 }
