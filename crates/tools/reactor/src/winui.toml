@@ -1492,7 +1492,10 @@ name = "SelectionMode"
 
 # `true` swaps the stock item presenter (one unwrapped line, clipped at the
 # pane edge) for a template that wraps each node's text to at most two lines,
-# ellipsizes the rest, and shows the full text as a tooltip.
+# ellipsizes the rest, and shows the full text as a tooltip. `false` and
+# unset both leave `ItemTemplate` cleared. Being an adapter on the real
+# `ItemTemplate` property, it records as `PropertyId::TreeViewItemTemplate`
+# with a `PropertyValue::Bool`, not as a template value.
 [[control.property]]
 name = "ItemTemplate"
 field = "wrap_item_text"

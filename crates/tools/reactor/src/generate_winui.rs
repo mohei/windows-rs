@@ -2050,19 +2050,28 @@ fn generate_set_property(control: &ResolvedControl, property: &ResolvedProperty)
         };
     }
     if property.adapter == Some(PropertyAdapter::TreeViewItemTextWrapping) {
+        // `false` clears rather than setting a null template, so it means
+        // exactly what leaving the property unset means.
+        let owner = path_ident(&property.static_owner);
+        let property_method = ident(&format!("{}Property", property.name));
         return quote! {
             (
                 Handle::#control_name(control),
                 PropertyId::#property_id,
                 PropertyValue::Bool(value),
             ) => {
-                let control = control.cast::<#interface>().map_err(native_error)?;
                 if *value {
                     control
+                        .cast::<#interface>()
+                        .map_err(native_error)?
                         .#setter(&wrapped_tree_view_item_template()?)
                         .map_err(native_error)
                 } else {
-                    control.#setter(None::<&DataTemplate>).map_err(native_error)
+                    control
+                        .cast::<IDependencyObject>()
+                        .map_err(native_error)?
+                        .ClearValue(&bindings::#owner::#property_method().map_err(native_error)?)
+                        .map_err(native_error)
                 }
             }
         };

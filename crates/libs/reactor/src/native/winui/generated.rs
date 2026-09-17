@@ -2863,14 +2863,17 @@ pub fn set_property(
             PropertyId::TreeViewItemTemplate,
             PropertyValue::Bool(value),
         ) => {
-            let control = control.cast::<ITreeView2>().map_err(native_error)?;
             if *value {
                 control
+                    .cast::<ITreeView2>()
+                    .map_err(native_error)?
                     .SetItemTemplate(&wrapped_tree_view_item_template()?)
                     .map_err(native_error)
             } else {
                 control
-                    .SetItemTemplate(None::<&DataTemplate>)
+                    .cast::<IDependencyObject>()
+                    .map_err(native_error)?
+                    .ClearValue(&bindings::TreeView::ItemTemplateProperty().map_err(native_error)?)
                     .map_err(native_error)
             }
         }
