@@ -108,6 +108,7 @@ pub(crate) fn generate_control_bindings_filter(schema: &ResolvedSchema) -> Strin
                 | Some(PropertyAdapter::RichTextBlocks)
                 | Some(PropertyAdapter::SelectionIndex)
                 | Some(PropertyAdapter::TreeNodeContent)
+                | Some(PropertyAdapter::TreeNodeUnderSource)
                 | Some(PropertyAdapter::TreeViewItemTextWrapping)
                 | Some(PropertyAdapter::Uri)
                 | Some(PropertyAdapter::VerticalContentAlignment)
@@ -239,6 +240,7 @@ pub(crate) fn generate_control_bindings_filter(schema: &ResolvedSchema) -> Strin
                     | EventPayloadSource::EventArgsInspectableString { interface }
                     | EventPayloadSource::EventArgsItemTag { interface }
                     | EventPayloadSource::EventArgsTreeNodeContent { interface }
+                    | EventPayloadSource::EventArgsTreeNodeUnderSource { interface }
                     | EventPayloadSource::SenderRichEditText { interface } => interface,
                     EventPayloadSource::PointerEvent
                     | EventPayloadSource::SenderItemTags { .. } => {
@@ -1637,6 +1639,36 @@ fn generate_event_arm(control: &ResolvedControl, event: &ResolvedEvent) -> Token
                                 native_error(error),
                             ),
                         }
+                    }
+                }
+            }
+        }
+        EventPayloadSource::EventArgsTreeNodeUnderSource {
+            interface: property_interface,
+        } => {
+            let property = ident(event.property.as_deref().unwrap());
+            let property_interface = path_ident(property_interface);
+            // Every element of a node's item (its template content and the
+            // item's own chrome) inherits the node as its DataContext. A
+            // request from anything else (the empty space below the items)
+            // reports "": a request off every item is normal, not an error.
+            quote! {
+                move |_, args| {
+                    if let Some(args) = args.as_ref() {
+                        let label = args
+                            .cast::<#property_interface>()
+                            .and_then(|args| args.#property())
+                            .and_then(|source| source.cast::<IFrameworkElement>())
+                            .and_then(|source| source.DataContext())
+                            .and_then(|node| node.cast::<ITreeViewNode>())
+                            .and_then(|node| node.Content())
+                            .and_then(|value| {
+                                value.cast::<windows_reference::IReference<windows_core::HSTRING>>()
+                            })
+                            .and_then(|value| value.Value())
+                            .map(|value| value.to_string_lossy())
+                            .unwrap_or_default();
+                        sink.enqueue(node, EventId::#event_id, revision, EventPayload::Str(label));
                     }
                 }
             }

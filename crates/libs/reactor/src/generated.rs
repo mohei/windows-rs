@@ -58,6 +58,11 @@ pub(crate) struct ListViewEvents {
     on_reordered: Option<Callback<Vec<String>>>,
 }
 #[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct TreeViewEvents {
+    on_item_invoked: Option<Callback<String>>,
+    on_item_context_requested: Option<Callback<String>>,
+}
+#[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct GridViewEvents {
     on_reordered: Option<Callback<Vec<String>>>,
     on_selection_changed: Option<Callback<Option<usize>>>,
@@ -4999,7 +5004,7 @@ pub mod public {
     pub struct TreeView {
         selection_mode: Property<TreeViewSelectionMode>,
         wrap_item_text: Property<bool>,
-        on_item_invoked: Option<Callback<String>>,
+        events: Option<std::rc::Rc<TreeViewEvents>>,
         element_state: Option<std::rc::Rc<ElementState>>,
     }
     impl TreeView {
@@ -5017,7 +5022,22 @@ pub mod public {
             self
         }
         pub fn on_item_invoked(mut self, callback: impl IntoPayloadCallback<String>) -> Self {
-            self.on_item_invoked = Some(callback.into_payload_callback());
+            std::rc::Rc::make_mut(
+                self.events
+                    .get_or_insert_with(|| std::rc::Rc::new(Default::default())),
+            )
+            .on_item_invoked = Some(callback.into_payload_callback());
+            self
+        }
+        pub fn on_item_context_requested(
+            mut self,
+            callback: impl IntoPayloadCallback<String>,
+        ) -> Self {
+            std::rc::Rc::make_mut(
+                self.events
+                    .get_or_insert_with(|| std::rc::Rc::new(Default::default())),
+            )
+            .on_item_context_requested = Some(callback.into_payload_callback());
             self
         }
     }
@@ -7979,7 +7999,7 @@ pub mod public {
                     let TreeView {
                         selection_mode,
                         wrap_item_text,
-                        on_item_invoked,
+                        events,
                         element_state,
                     } = *value;
                     ElementParts {
@@ -7987,7 +8007,7 @@ pub mod public {
                         props: MountedProps::TreeView(std::rc::Rc::new(TreeViewMountedProps {
                             selection_mode,
                             wrap_item_text,
-                            on_item_invoked,
+                            events,
                         })),
                         reference: None,
                         element_state,
@@ -8569,7 +8589,7 @@ pub mod public {
                 (Self::TreeView(value), MountedProps::TreeView(mounted)) => {
                     true && value.selection_mode == mounted.selection_mode
                         && value.wrap_item_text == mounted.wrap_item_text
-                        && value.on_item_invoked == mounted.on_item_invoked
+                        && value.events == mounted.events
                 }
                 (Self::GridView(value), MountedProps::GridView(mounted)) => {
                     true && value.selected_index == mounted.selected_index
@@ -9288,7 +9308,17 @@ pub mod public {
                 Self::TreeView(value) => {
                     visit(
                         EventId::TreeViewItemInvoked,
-                        value.on_item_invoked.is_some(),
+                        value
+                            .events
+                            .as_ref()
+                            .is_some_and(|events| events.on_item_invoked.is_some()),
+                    );
+                    visit(
+                        EventId::TreeViewContextRequested,
+                        value
+                            .events
+                            .as_ref()
+                            .is_some_and(|events| events.on_item_context_requested.is_some()),
                     );
                 }
                 Self::GridView(value) => {
@@ -11634,7 +11664,17 @@ impl MountedEventsExt for MountedProps {
             Self::TreeView(values) => {
                 visit(
                     EventId::TreeViewItemInvoked,
-                    values.on_item_invoked.is_some(),
+                    values
+                        .events
+                        .as_ref()
+                        .is_some_and(|events| events.on_item_invoked.is_some()),
+                );
+                visit(
+                    EventId::TreeViewContextRequested,
+                    values
+                        .events
+                        .as_ref()
+                        .is_some_and(|events| events.on_item_context_requested.is_some()),
                 );
             }
             Self::GridView(values) => {
@@ -12088,10 +12128,20 @@ impl MountedEventsExt for MountedProps {
                 .map(|callback| callback.call(value.as_ref().clone())),
             (Self::TreeView(values), EventId::TreeViewItemInvoked, EventPayload::Str(value)) => {
                 values
-                    .on_item_invoked
+                    .events
                     .as_ref()
+                    .and_then(|events| events.on_item_invoked.as_ref())
                     .map(|callback| callback.call(value.clone()))
             }
+            (
+                Self::TreeView(values),
+                EventId::TreeViewContextRequested,
+                EventPayload::Str(value),
+            ) => values
+                .events
+                .as_ref()
+                .and_then(|events| events.on_item_context_requested.as_ref())
+                .map(|callback| callback.call(value.clone())),
             (
                 Self::GridView(values),
                 EventId::GridViewDragItemsCompleted,
@@ -13597,13 +13647,13 @@ impl PartialEq for ListViewItemMountedProps {
 pub(crate) struct TreeViewMountedProps {
     selection_mode: Property<TreeViewSelectionMode>,
     wrap_item_text: Property<bool>,
-    on_item_invoked: Option<Callback<String>>,
+    events: Option<std::rc::Rc<TreeViewEvents>>,
 }
 impl PartialEq for TreeViewMountedProps {
     fn eq(&self, other: &Self) -> bool {
         true && self.selection_mode == other.selection_mode
             && self.wrap_item_text == other.wrap_item_text
-            && self.on_item_invoked == other.on_item_invoked
+            && self.events == other.events
     }
 }
 #[derive(Clone, Debug)]
@@ -14134,6 +14184,7 @@ pub enum EventId {
     ListViewSelectionChanged,
     ListViewDragItemsCompleted,
     TreeViewItemInvoked,
+    TreeViewContextRequested,
     GridViewDragItemsCompleted,
     GridViewSelectionChanged,
     RichEditBoxTextChanged,
@@ -18021,13 +18072,22 @@ const TREE_VIEW_PROPERTIES: &[PropertyDescriptor] = &[
         observes_feedback: false,
     },
 ];
-const TREE_VIEW_EVENTS: &[EventDescriptor] = &[EventDescriptor {
-    id: EventId::TreeViewItemInvoked,
-    name: "ItemInvoked",
-    field: "on_item_invoked",
-    payload: "Str",
-    interface: "Microsoft.UI.Xaml.Controls.ITreeView",
-}];
+const TREE_VIEW_EVENTS: &[EventDescriptor] = &[
+    EventDescriptor {
+        id: EventId::TreeViewItemInvoked,
+        name: "ItemInvoked",
+        field: "on_item_invoked",
+        payload: "Str",
+        interface: "Microsoft.UI.Xaml.Controls.ITreeView",
+    },
+    EventDescriptor {
+        id: EventId::TreeViewContextRequested,
+        name: "ContextRequested",
+        field: "on_item_context_requested",
+        payload: "Str",
+        interface: "Microsoft.UI.Xaml.IUIElement",
+    },
+];
 const TREE_VIEW_SLOTS: &[SlotDescriptor] = &[];
 const GRID_VIEW_PROPERTIES: &[PropertyDescriptor] = &[
     PropertyDescriptor {

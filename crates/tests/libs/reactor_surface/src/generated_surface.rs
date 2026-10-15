@@ -47,7 +47,7 @@ pub struct ExtensionSurface {
 }
 pub(crate) const PROJECTED_CONTROL_COUNT: usize = 79usize;
 pub(crate) const PROJECTED_PROPERTY_COUNT: usize = 232usize;
-pub(crate) const PROJECTED_EVENT_COUNT: usize = 65usize;
+pub(crate) const PROJECTED_EVENT_COUNT: usize = 66usize;
 pub(crate) const CAPABILITY_PROPERTY_COUNT: usize = 27usize;
 pub(crate) const STRUCTURAL_COUNT: usize = 64usize;
 pub(crate) const EXTENSION_COUNT: usize = 5;
@@ -2967,6 +2967,18 @@ fn event_tree_view_on_item_invoked(stage: usize) -> View {
             let _ = 0u8;
         }),)),
         2 => Grid::new().children((TreeView::new().on_item_invoked(move |_| {
+            let _ = 1u8;
+        }),)),
+        _ => unreachable!(),
+    }
+}
+fn event_tree_view_on_item_context_requested(stage: usize) -> View {
+    match stage {
+        0 | 3 => Grid::new().children((TreeView::new(),)),
+        1 => Grid::new().children((TreeView::new().on_item_context_requested(move |_| {
+            let _ = 0u8;
+        }),)),
+        2 => Grid::new().children((TreeView::new().on_item_context_requested(move |_| {
             let _ = 1u8;
         }),)),
         _ => unreachable!(),
@@ -7220,6 +7232,13 @@ pub(crate) static SURFACE_CASES: &[SurfaceCase] = &[
         build: event_tree_view_on_item_invoked,
     },
     SurfaceCase {
+        name: "event.TreeView.ContextRequested",
+        kind: SurfaceKind::Event,
+        stages: 4,
+        subscription_delta: Some(1usize),
+        build: event_tree_view_on_item_context_requested,
+    },
+    SurfaceCase {
         name: "control.GridView.construct",
         kind: SurfaceKind::Control,
         stages: 1,
@@ -10157,6 +10176,15 @@ pub static PROJECTED_EVENTS: &[EventSurface] = &[
     EventSurface {
         control: "TreeView",
         event: "ItemInvoked",
+        payload: "Str",
+        conversion: "Identity",
+        subscription: "callback",
+        delivery: "registration+deterministic",
+        active_property: None,
+    },
+    EventSurface {
+        control: "TreeView",
+        event: "ContextRequested",
         payload: "Str",
         conversion: "Identity",
         subscription: "callback",

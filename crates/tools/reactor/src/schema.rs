@@ -137,6 +137,7 @@ pub(crate) enum PropertyAdapter {
     RichEditText,
     RichTextBlocks,
     TreeNodeContent,
+    TreeNodeUnderSource,
     TreeViewItemTextWrapping,
     Uri,
     VerticalContentAlignment,
@@ -369,6 +370,9 @@ impl PropertyAdapter {
             Self::TreeNodeContent => {
                 PropertyAdapterKind::EventOnly("tree_node_content is an event-only adapter")
             }
+            Self::TreeNodeUnderSource => {
+                PropertyAdapterKind::EventOnly("tree_node_under_source is an event-only adapter")
+            }
             Self::NavigationDisplayMode => {
                 PropertyAdapterKind::EventOnly("navigation_display_mode is an event-only adapter")
             }
@@ -593,6 +597,7 @@ pub(crate) enum EventPayloadSource {
     EventArgsInspectableString { interface: String },
     EventArgsItemTag { interface: String },
     EventArgsTreeNodeContent { interface: String },
+    EventArgsTreeNodeUnderSource { interface: String },
     SenderRichEditText { interface: String },
     PointerEvent,
     SenderItemTags { interface: String, property: String },
@@ -1352,6 +1357,29 @@ impl Schema {
                             (
                                 "Str".to_string(),
                                 EventPayloadSource::EventArgsTreeNodeContent { interface },
+                                ReadValueConversion::Identity,
+                            )
+                        } else if event.adapter == Some(PropertyAdapter::TreeNodeUnderSource) {
+                            if control.type_name != "Microsoft.UI.Xaml.Controls.TreeView"
+                                || event.name != "ContextRequested"
+                                || property != "OriginalSource"
+                            {
+                                return Err(format!(
+                                    "{}.{} tree_node_under_source requires TreeView.ContextRequested.OriginalSource",
+                                    control.type_name, event.name
+                                ));
+                            }
+                            let interface = metadata
+                                .resolve_event_args_object_property(&name, &method, property)
+                                .ok_or_else(|| {
+                                    format!(
+                                        "{}.{} has unsupported source property {}",
+                                        control.type_name, event.name, property
+                                    )
+                                })?;
+                            (
+                                "Str".to_string(),
+                                EventPayloadSource::EventArgsTreeNodeUnderSource { interface },
                                 ReadValueConversion::Identity,
                             )
                         } else {

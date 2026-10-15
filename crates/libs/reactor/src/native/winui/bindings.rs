@@ -2381,6 +2381,34 @@ impl windows_core::RuntimeType for ContentDialogResult {
 }
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ContextRequestedEventArgs(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    ContextRequestedEventArgs,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+windows_core::imp::required_hierarchy!(ContextRequestedEventArgs, RoutedEventArgs);
+impl windows_core::RuntimeType for ContextRequestedEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, IContextRequestedEventArgs>();
+}
+unsafe impl windows_core::Interface for ContextRequestedEventArgs {
+    type Vtable = <IContextRequestedEventArgs as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID = <IContextRequestedEventArgs as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for ContextRequestedEventArgs {
+    type Target = IContextRequestedEventArgs;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for ContextRequestedEventArgs {
+    const NAME: &'static str = "Microsoft.UI.Xaml.Input.ContextRequestedEventArgs";
+}
+unsafe impl Send for ContextRequestedEventArgs {}
+unsafe impl Sync for ContextRequestedEventArgs {}
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Control(windows_core::IUnknown);
 windows_core::imp::interface_hierarchy!(
     Control,
@@ -7678,6 +7706,19 @@ pub struct IContentDialogStatics_Vtbl {
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    IContextRequestedEventArgs,
+    IContextRequestedEventArgs_Vtbl,
+    0xbcedcb98_77b5_53c0_802e_fd52f3806e51
+);
+impl windows_core::RuntimeType for IContextRequestedEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct IContextRequestedEventArgs_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+}
+windows_core::imp::define_interface!(
     IControl,
     IControl_Vtbl,
     0x857d6e8a_d45a_5c69_a99c_bf6a5c54fb38
@@ -9417,6 +9458,16 @@ impl IFrameworkElement {
             .ok()
         }
     }
+    pub(crate) fn DataContext(&self) -> windows_core::Result<windows_core::IInspectable> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).DataContext)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        }
+    }
     pub(crate) fn SetStyle<P0>(&self, value: P0) -> windows_core::Result<()>
     where
         P0: windows_core::Param<Style>,
@@ -9606,7 +9657,10 @@ pub struct IFrameworkElement_Vtbl {
     Name: usize,
     SetName: usize,
     BaseUri: usize,
-    DataContext: usize,
+    pub DataContext: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
     SetDataContext: usize,
     AllowFocusOnInteraction: usize,
     SetAllowFocusOnInteraction: usize,
@@ -15077,9 +15131,25 @@ impl windows_core::RuntimeType for IRoutedEventArgs {
     const SIGNATURE: windows_core::imp::ConstBuffer =
         windows_core::imp::ConstBuffer::for_interface::<Self>();
 }
+impl IRoutedEventArgs {
+    pub(crate) fn OriginalSource(&self) -> windows_core::Result<windows_core::IInspectable> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).OriginalSource)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        }
+    }
+}
 #[repr(C)]
 pub struct IRoutedEventArgs_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
+    pub OriginalSource: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
     IRowDefinition,
@@ -19692,6 +19762,38 @@ impl IUIElement {
             ))
         }
     }
+    pub(crate) fn ContextRequested<F>(
+        &self,
+        handler: F,
+    ) -> windows_core::Result<windows_core::EventRevoker>
+    where
+        F: Fn(windows_core::Ref<UIElement>, windows_core::Ref<ContextRequestedEventArgs>) + 'static,
+    {
+        let handler: TypedEventHandler<UIElement, ContextRequestedEventArgs> = {
+            let com = windows_core::imp::DelegateBox::<
+                TypedEventHandler<UIElement, ContextRequestedEventArgs>,
+                F,
+            >::new(
+                &TypedEventHandlerBox::<UIElement, ContextRequestedEventArgs, F>::VTABLE,
+                handler,
+            );
+            unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+        };
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            let token__ = (windows_core::Interface::vtable(self).ContextRequested)(
+                windows_core::Interface::as_raw(self),
+                windows_core::Interface::as_raw(&handler),
+                &mut result__,
+            )
+            .map(|| result__)?;
+            Ok(windows_core::EventRevoker::new(
+                self.clone(),
+                token__,
+                windows_core::Interface::vtable(self).RemoveContextRequested,
+            ))
+        }
+    }
     pub(crate) fn CapturePointer<P0>(&self, value: P0) -> windows_core::Result<bool>
     where
         P0: windows_core::Param<Pointer>,
@@ -20011,8 +20113,13 @@ pub struct IUIElement_Vtbl {
     RemoveDoubleTapped: usize,
     Holding: usize,
     RemoveHolding: usize,
-    ContextRequested: usize,
-    RemoveContextRequested: usize,
+    pub ContextRequested: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut i64,
+    ) -> windows_core::HRESULT,
+    pub RemoveContextRequested:
+        unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
     ContextCanceled: usize,
     RemoveContextCanceled: usize,
     RightTapped: usize,

@@ -6547,6 +6547,38 @@ pub fn subscribe_event(
                 })
                 .map_err(native_error)
         }
+        (Handle::TreeView(value), EventId::TreeViewContextRequested) => {
+            let source = value.cast::<IUIElement>().map_err(native_error)?;
+            source
+                .ContextRequested(move |_, args| {
+                    if let Some(args) = args.as_ref() {
+                        let label = args
+                            .cast::<IRoutedEventArgs>()
+                            .and_then(|args| args.OriginalSource())
+                            .and_then(|source| source.cast::<IFrameworkElement>())
+                            .and_then(|source| source.DataContext())
+                            .and_then(|node| node.cast::<ITreeViewNode>())
+                            .and_then(|node| node.Content())
+                            .and_then(|value| {
+                                value.cast::<windows_reference::IReference<windows_core::HSTRING>>()
+                            })
+                            .and_then(|value| value.Value())
+                            .map(|value| value.to_string_lossy())
+                            .unwrap_or_default();
+                        sink.enqueue(
+                            node,
+                            EventId::TreeViewContextRequested,
+                            revision,
+                            EventPayload::Str(label),
+                        );
+                    }
+                })
+                .map(|revoker| NativeSubscription::Event {
+                    _revoker: revoker,
+                    revision,
+                })
+                .map_err(native_error)
+        }
         (Handle::GridView(value), EventId::GridViewDragItemsCompleted) => {
             let source = value.cast::<IListViewBase>().map_err(native_error)?;
             source
