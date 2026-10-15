@@ -1506,12 +1506,15 @@ name = "ItemInvoked"
 property = "InvokedItem"
 adapter = "tree_node_content"
 
-# Right-click, long-press, Shift+F10 or the Menu key over the tree, before its
-# `ContextFlyout` (a `.menu(...)`) opens: reports the label of the node whose
-# item the request came from, or "" when it came from no item (the empty space
-# below them). Every element of a node's item inherits the node itself as its
-# DataContext, so this reads the request's `OriginalSource`'s DataContext. The
-# event is left unhandled, so the flyout still opens.
+# Right-click, long-press, Shift+F10 or the Menu key over the tree: reports the
+# label of the node whose item the request came from (walking up from the
+# request's `OriginalSource` to its TreeViewItem, then `NodeFromContainer`), or
+# "" when it came from no item (the empty space below them). The event is left
+# unhandled. Put the context menu on an element *enclosing* the tree, not on
+# the TreeView itself: a control's own `ContextFlyout` is opened by its
+# `OnContextRequested` class handler, which marks the request handled before
+# this handler would run. On an enclosing element the request passes the tree
+# first, so the label arrives before that menu opens.
 [[control.event]]
 name = "ContextRequested"
 field = "on_item_context_requested"

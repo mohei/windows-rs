@@ -6550,21 +6550,37 @@ pub fn subscribe_event(
         (Handle::TreeView(value), EventId::TreeViewContextRequested) => {
             let source = value.cast::<IUIElement>().map_err(native_error)?;
             source
-                .ContextRequested(move |_, args| {
-                    if let Some(args) = args.as_ref() {
-                        let label = args
-                            .cast::<IRoutedEventArgs>()
-                            .and_then(|args| args.OriginalSource())
-                            .and_then(|source| source.cast::<IFrameworkElement>())
-                            .and_then(|source| source.DataContext())
-                            .and_then(|node| node.cast::<ITreeViewNode>())
-                            .and_then(|node| node.Content())
-                            .and_then(|value| {
-                                value.cast::<windows_reference::IReference<windows_core::HSTRING>>()
-                            })
-                            .and_then(|value| value.Value())
-                            .map(|value| value.to_string_lossy())
-                            .unwrap_or_default();
+                .ContextRequested(move |sender, args| {
+                    if let (Some(sender), Some(args)) = (sender.as_ref(), args.as_ref()) {
+                        let label = (|| -> Option<String> {
+                            let tree = sender.cast::<ITreeView2>().ok()?;
+                            let mut element = args
+                                .cast::<IRoutedEventArgs>()
+                                .ok()?
+                                .OriginalSource()
+                                .ok()?
+                                .cast::<DependencyObject>()
+                                .ok()?;
+                            while element.cast::<ITreeViewItem>().is_err() {
+                                if element.cast::<ITreeView>().is_ok() {
+                                    return None;
+                                }
+                                element = VisualTreeHelper::GetParent(&element).ok()?;
+                            }
+                            let value = tree
+                                .NodeFromContainer(&element)
+                                .ok()?
+                                .cast::<ITreeViewNode>()
+                                .ok()?
+                                .Content()
+                                .ok()?
+                                .cast::<windows_reference::IReference<windows_core::HSTRING>>()
+                                .ok()?
+                                .Value()
+                                .ok()?;
+                            Some(value.to_string_lossy())
+                        })()
+                        .unwrap_or_default();
                         sink.enqueue(
                             node,
                             EventId::TreeViewContextRequested,

@@ -117,15 +117,21 @@ fn wrap_item_text_mounts_updates_and_clears() {
 }
 
 #[test]
-fn item_context_requests_route_the_node_label_alongside_a_context_flyout_menu() {
+fn item_context_requests_route_the_node_label_before_an_enclosing_context_menu() {
+    // The menu sits on an element enclosing the tree, as `on_item_context_requested`'s
+    // doc says it must: a menu on the TreeView itself is opened by the
+    // control's class handler, which marks the request handled first.
     let requested = Rc::new(RefCell::new(Vec::new()));
     let picked = Rc::new(RefCell::new(String::new()));
     let (capture, pick) = (Rc::clone(&requested), Rc::clone(&picked));
     let mut pump = Pump::new(RecordingRuntime::default());
     pump.mount_view(
-        TreeView::new()
-            .on_item_context_requested(move |label| capture.borrow_mut().push(label))
-            .nodes(nodes("Root"))
+        Border::new()
+            .content(
+                TreeView::new()
+                    .on_item_context_requested(move |label| capture.borrow_mut().push(label))
+                    .nodes(nodes("Root")),
+            )
             .menu(Menu::new(
                 [MenuItem::item("infer", "Infer")],
                 move |label| *pick.borrow_mut() = label,
@@ -134,7 +140,11 @@ fn item_context_requests_route_the_node_label_alongside_a_context_flyout_menu() 
     .unwrap();
 
     let owner = pump.root().unwrap();
-    let target = Pump::<RecordingRuntime>::native_root(&pump.tree, owner).unwrap();
+    let border = Pump::<RecordingRuntime>::native_root(&pump.tree, owner).unwrap();
+    let [target] = pump.tree.children(border).unwrap() else {
+        panic!("the border holds the tree");
+    };
+    let target = Pump::<RecordingRuntime>::native_root(&pump.tree, *target).unwrap();
     let revision = pump
         .event_revision(target, EventId::TreeViewContextRequested)
         .unwrap();
@@ -150,7 +160,7 @@ fn item_context_requests_route_the_node_label_alongside_a_context_flyout_menu() 
     assert_eq!(pump.dispatch_events(), Ok(2));
     assert_eq!(*requested.borrow(), ["Second", ""]);
 
-    // The tree's own menu is an ordinary context flyout, still reachable.
+    // The enclosing menu is an ordinary context flyout.
     let (_, kind, _, _) = pump.runtime().owned_menu(owner).unwrap();
     assert_eq!(*kind, OwnedMenuKind::ContextFlyout);
     pump.runtime_mut().queue_owned_click(owner, "Infer");

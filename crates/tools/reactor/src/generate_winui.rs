@@ -1648,26 +1648,45 @@ fn generate_event_arm(control: &ResolvedControl, event: &ResolvedEvent) -> Token
         } => {
             let property = ident(event.property.as_deref().unwrap());
             let property_interface = path_ident(property_interface);
-            // Every element of a node's item (its template content and the
-            // item's own chrome) inherits the node as its DataContext. A
-            // request from anything else (the empty space below the items)
-            // reports "": a request off every item is normal, not an error.
+            // Walks up the visual tree from the element the request came from
+            // to its TreeViewItem and asks the tree for that container's
+            // node. (The DataContext is not enough: only the item template's
+            // content has the node as DataContext, not the item's own chrome —
+            // the row's empty space beside a short label.) Reaching a
+            // TreeView first means the request came from no item (the empty
+            // space below the items), which reports "": normal, not an error.
             quote! {
-                move |_, args| {
-                    if let Some(args) = args.as_ref() {
-                        let label = args
-                            .cast::<#property_interface>()
-                            .and_then(|args| args.#property())
-                            .and_then(|source| source.cast::<IFrameworkElement>())
-                            .and_then(|source| source.DataContext())
-                            .and_then(|node| node.cast::<ITreeViewNode>())
-                            .and_then(|node| node.Content())
-                            .and_then(|value| {
-                                value.cast::<windows_reference::IReference<windows_core::HSTRING>>()
-                            })
-                            .and_then(|value| value.Value())
-                            .map(|value| value.to_string_lossy())
-                            .unwrap_or_default();
+                move |sender, args| {
+                    if let (Some(sender), Some(args)) = (sender.as_ref(), args.as_ref()) {
+                        let label = (|| -> Option<String> {
+                            let tree = sender.cast::<ITreeView2>().ok()?;
+                            let mut element = args
+                                .cast::<#property_interface>()
+                                .ok()?
+                                .#property()
+                                .ok()?
+                                .cast::<DependencyObject>()
+                                .ok()?;
+                            while element.cast::<ITreeViewItem>().is_err() {
+                                if element.cast::<ITreeView>().is_ok() {
+                                    return None;
+                                }
+                                element = VisualTreeHelper::GetParent(&element).ok()?;
+                            }
+                            let value = tree
+                                .NodeFromContainer(&element)
+                                .ok()?
+                                .cast::<ITreeViewNode>()
+                                .ok()?
+                                .Content()
+                                .ok()?
+                                .cast::<windows_reference::IReference<windows_core::HSTRING>>()
+                                .ok()?
+                                .Value()
+                                .ok()?;
+                            Some(value.to_string_lossy())
+                        })()
+                        .unwrap_or_default();
                         sink.enqueue(node, EventId::#event_id, revision, EventPayload::Str(label));
                     }
                 }
