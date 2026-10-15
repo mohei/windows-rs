@@ -2069,17 +2069,25 @@ impl<R: NativeRuntime> Pump<R> {
                 Ok((node, vec![*target]))
             }
             ViewKind::Menu { target, menu } => {
+                // A menu on an element somewhere inside another menu's target
+                // is fine: each attaches to its own native element, and WinUI
+                // opens the innermost element's flyout (e.g. a context menu on
+                // a list inside a page that has one of its own). Only a menu
+                // with no native element between it and an enclosing menu
+                // would share that menu's native target and overwrite its
+                // attachment.
                 let mut current = logical_parent;
+                let mut native_between = false;
                 while let Some(parent) = current {
-                    if matches!(
-                        tree.kind(parent)?,
-                        NodeKind::Tooltip(_)
-                            | NodeKind::Flyout(_)
-                            | NodeKind::Menu(_)
-                            | NodeKind::CommandBarFlyout
-                            | NodeKind::ContentDialog(_)
-                    ) {
-                        return Err(PumpError::StructureUnsupported);
+                    match tree.kind(parent)? {
+                        NodeKind::Tooltip(_) | NodeKind::Flyout(_) | NodeKind::ContentDialog(_) => {
+                            return Err(PumpError::StructureUnsupported);
+                        }
+                        NodeKind::Menu(_) | NodeKind::CommandBarFlyout if !native_between => {
+                            return Err(PumpError::StructureUnsupported);
+                        }
+                        NodeKind::Native(_) => native_between = true,
+                        _ => {}
                     }
                     current = tree.parent(parent)?;
                 }

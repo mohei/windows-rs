@@ -390,3 +390,96 @@ fn command_bar_flyout_component_target_change_uses_replacement_id() {
     assert!(detach < destroy);
     assert!(destroy < attach);
 }
+
+#[test]
+fn a_menu_inside_another_menus_target_attaches_to_its_own_element() {
+    // A context menu on an element inside a page that has a context menu of
+    // its own: each attaches to its own native element (WinUI opens the
+    // innermost one), so this mounts instead of being rejected.
+    let clicked = Rc::new(RefCell::new(Vec::new()));
+    let (outer_capture, inner_capture) = (Rc::clone(&clicked), Rc::clone(&clicked));
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(
+        Border::new()
+            .content(Border::new().menu(Menu::new(
+                [MenuItem::item("inner", "Inner")],
+                move |label| inner_capture.borrow_mut().push(label),
+            )))
+            .menu(Menu::new(
+                [MenuItem::item("outer", "Outer")],
+                move |label| outer_capture.borrow_mut().push(label),
+            )),
+    )
+    .unwrap();
+
+    let outer = pump.root().unwrap();
+    let outer_border = target(&pump);
+    let [inner] = pump.tree.children(outer_border).unwrap() else {
+        panic!("the outer border has one child, the inner menu");
+    };
+    let inner = *inner;
+    let (outer_target, outer_kind, _, _) = pump.runtime().owned_menu(outer).unwrap().clone();
+    let (inner_target, inner_kind, _, _) = pump.runtime().owned_menu(inner).unwrap().clone();
+    assert_eq!(outer_target, outer_border);
+    assert_eq!(
+        inner_target,
+        Pump::<RecordingRuntime>::native_root(&pump.tree, inner).unwrap()
+    );
+    assert_ne!(inner_target, outer_target);
+    assert_eq!(
+        (outer_kind, inner_kind),
+        (OwnedMenuKind::ContextFlyout, OwnedMenuKind::ContextFlyout)
+    );
+
+    pump.runtime_mut().queue_owned_click(inner, "Inner");
+    pump.runtime_mut().queue_owned_click(outer, "Outer");
+    assert_eq!(pump.dispatch_events(), Ok(2));
+    assert_eq!(&*clicked.borrow(), &["Inner", "Outer"]);
+}
+
+struct MenuOnItsRoot;
+
+impl Component for MenuOnItsRoot {
+    type Input = ();
+    type Message = ();
+
+    fn create(_: &(), _: &ComponentContext<Self>) -> Self {
+        Self
+    }
+
+    fn update(&mut self, _: (), _: &ComponentContext<Self>) {}
+
+    fn view(&self, _: &(), _: &mut ViewContext<Self>) -> View {
+        Border::new().menu(Menu::new([MenuItem::item("inner", "Inner")], |_| {}))
+    }
+}
+
+#[test]
+fn a_menu_inside_a_component_under_another_menu_mounts() {
+    let mut pump = Pump::new(RecordingRuntime::default());
+    pump.mount_view(
+        Border::new()
+            .content(View::component::<MenuOnItsRoot>(()))
+            .menu(Menu::new([MenuItem::item("outer", "Outer")], |_| {})),
+    )
+    .unwrap();
+    assert_eq!(pump.dispatch_components(8), Ok(0));
+}
+
+#[test]
+fn two_menus_on_the_same_element_are_still_rejected() {
+    // Nothing native between them: both would attach to the same border and
+    // the second would overwrite the first. Likewise through a component
+    // whose root is itself a menu.
+    let menu = |label: &'static str| Menu::new([MenuItem::item(label, label)], |_| {});
+    let mut pump = Pump::new(RecordingRuntime::default());
+    assert_eq!(
+        pump.mount_view(Border::new().menu(menu("inner")).menu(menu("outer"))),
+        Err(PumpError::StructureUnsupported)
+    );
+    let mut pump = Pump::new(RecordingRuntime::default());
+    assert_eq!(
+        pump.mount_view(View::component::<MenuOnItsRoot>(()).menu(menu("outer"))),
+        Err(PumpError::StructureUnsupported)
+    );
+}
