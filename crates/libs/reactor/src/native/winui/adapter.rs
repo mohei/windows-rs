@@ -575,34 +575,31 @@ impl WinUiAdapter {
                 }
             }
             ImperativeRequest::ScrollTreeNodeIntoView { object, text } => {
-                let Some(Handle::TreeView(tree)) = self.handles.get(&object) else {
-                    return Ok(());
-                };
                 let node = self.handles.values().find_map(|handle| match handle {
                     Handle::TreeNode(node) if node.text == *text => Some(node.value.clone()),
                     _ => None,
                 });
-                let root = tree.value.cast::<native::DependencyObject>()?;
-                if let (Some(node), Some(list)) =
-                    (node, find_descendant::<native::IListViewBase>(&root))
+                if let (Some(Handle::TreeView(tree)), Some(node)) =
+                    (self.handles.get(&object), node)
                 {
-                    tree.value.cast::<native::IUIElement>()?.UpdateLayout()?;
-                    list.ScrollIntoView(&node.cast::<IInspectable>()?)?;
+                    let scroll = PendingTreeScroll {
+                        offset: None,
+                        node: Some(node.clone()),
+                    };
+                    if !scroll_tree(&tree.value, scroll)? {
+                        tree.pending_scroll.borrow_mut().node = Some(node);
+                    }
                 }
             }
             ImperativeRequest::ScrollTreeTo { object, offset } => {
-                let Some(Handle::TreeView(tree)) = self.handles.get(&object) else {
-                    return Ok(());
-                };
-                let viewer = match tree.scroll_viewer.borrow().as_ref() {
-                    Some((viewer, _)) => Some(viewer.clone()),
-                    None => find_descendant::<native::ScrollViewer>(&tree.value.cast()?),
-                };
-                if let Some(viewer) = viewer {
-                    tree.value.cast::<native::IUIElement>()?.UpdateLayout()?;
-                    viewer
-                        .cast::<native::IScrollViewer>()?
-                        .ChangeViewWithOptionalAnimation(None, Some(offset), None, true)?;
+                if let Some(Handle::TreeView(tree)) = self.handles.get(&object) {
+                    let scroll = PendingTreeScroll {
+                        offset: Some(offset),
+                        node: None,
+                    };
+                    if !scroll_tree(&tree.value, scroll)? {
+                        tree.pending_scroll.borrow_mut().offset = Some(offset);
+                    }
                 }
             }
             ImperativeRequest::SetSwapChain {

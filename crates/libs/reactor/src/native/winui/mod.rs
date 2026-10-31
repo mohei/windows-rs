@@ -41,12 +41,38 @@ struct NativeTreeView {
     expanding: Rc<RefCell<NativeStringEvent>>,
     collapsed: Rc<RefCell<NativeStringEvent>>,
     view_changed: Rc<RefCell<NativeF64Event>>,
-    /// The template's `ScrollViewer` and its `ViewChanged` subscription, once loaded.
-    scroll_viewer: Rc<RefCell<Option<(native::ScrollViewer, windows_core::EventRevoker)>>>,
+    /// Scrolls requested before the template was applied, carried out once it loads.
+    pending_scroll: Rc<RefCell<PendingTreeScroll>>,
     _item_invoked: windows_core::EventRevoker,
     _expanding: windows_core::EventRevoker,
     _collapsed: windows_core::EventRevoker,
     _loaded: windows_core::EventRevoker,
+}
+
+/// A `TreeView` scroll asked for before the tree loaded (`ScrollTreeTo`, `ScrollTreeNodeIntoView`).
+#[derive(Default)]
+struct PendingTreeScroll {
+    offset: Option<f64>,
+    node: Option<native::TreeViewNode>,
+}
+
+/// Carries out a `TreeView`'s scrolls: an offset first, then a node into view.
+fn scroll_tree(tree: &native::TreeView, scroll: PendingTreeScroll) -> Result<bool, WinUiError> {
+    tree.cast::<native::IUIElement>()?.UpdateLayout()?;
+    let root = tree.cast::<native::DependencyObject>()?;
+    if let Some(offset) = scroll.offset {
+        let Some(viewer) = find_descendant::<native::IScrollViewer>(&root) else {
+            return Ok(false);
+        };
+        viewer.ChangeViewWithOptionalAnimation(None, Some(offset), None, true)?;
+    }
+    if let Some(node) = scroll.node {
+        let Some(list) = find_descendant::<native::IListViewBase>(&root) else {
+            return Ok(false);
+        };
+        list.ScrollIntoView(&node.cast::<IInspectable>()?)?;
+    }
+    Ok(true)
 }
 
 struct NativeTreeNode {

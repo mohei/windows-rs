@@ -105,11 +105,15 @@ impl WinUiAdapter {
                         })?;
                         // The template's ScrollViewer exists only once the tree is loaded.
                         let view_changed = Rc::new(RefCell::new(NativeF64Event::default()));
+                        // The template's `ScrollViewer` and its `ViewChanged` subscription, held by
+                        // the `Loaded` handler that makes them.
                         let scroll_viewer = Rc::new(RefCell::new(None));
-                        let (scroll_event, scroll_queue, scroll_slot) = (
+                        let pending_scroll = Rc::new(RefCell::new(PendingTreeScroll::default()));
+                        let (scroll_event, scroll_queue, scroll_slot, scroll_pending) = (
                             Rc::clone(&view_changed),
                             Rc::clone(&self.event_queue),
-                            Rc::clone(&scroll_viewer),
+                            scroll_viewer,
+                            Rc::clone(&pending_scroll),
                         );
                         let _loaded = value.cast::<native::IFrameworkElement>()?.Loaded(
                             move |sender, _| {
@@ -156,6 +160,14 @@ impl WinUiAdapter {
                                 if let Ok(revoker) = revoker {
                                     *scroll_slot.borrow_mut() = Some((viewer, revoker));
                                 }
+                                // What was asked for before the template was applied.
+                                let pending = std::mem::take(&mut *scroll_pending.borrow_mut());
+                                if let Some(tree) = sender
+                                    .as_ref()
+                                    .and_then(|sender| sender.cast::<native::TreeView>().ok())
+                                {
+                                    let _ = scroll_tree(&tree, pending);
+                                }
                             },
                         )?;
                         Handle::TreeView(NativeTreeView {
@@ -164,7 +176,7 @@ impl WinUiAdapter {
                             expanding,
                             collapsed,
                             view_changed,
-                            scroll_viewer,
+                            pending_scroll,
                             _item_invoked,
                             _expanding,
                             _collapsed,
