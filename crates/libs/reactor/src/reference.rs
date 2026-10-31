@@ -263,6 +263,25 @@ impl ElementRef<WebView2> {
     }
 }
 
+impl ElementRef<TreeView> {
+    /// Scrolls the tree as little as it takes to show the node whose text is `text` (the
+    /// label `on_item_invoked` reports): not at all when it is already in view. Runs after the
+    /// pending update is applied, so a node declared in the same update is found.
+    #[must_use]
+    pub fn request_scroll_node_into_view(&self, text: impl Into<Rc<str>>) -> bool {
+        let text = text.into();
+        self.enqueue(move |object, _, _| ImperativeRequest::ScrollTreeNodeIntoView { object, text })
+    }
+
+    /// Scrolls the tree to `offset` DIPs from its top, as `on_view_changed` last reported it.
+    /// The tree is laid out first, so an offset into nodes declared in the same update holds
+    /// instead of clamping to the old extent.
+    #[must_use]
+    pub fn request_scroll_to(&self, offset: f64) -> bool {
+        self.enqueue(move |object, _, _| ImperativeRequest::ScrollTreeTo { object, offset })
+    }
+}
+
 impl ElementRef<SwapChainPanel> {
     #[must_use]
     pub fn request_set_swap_chain(
@@ -782,6 +801,16 @@ pub enum ImperativeRequest {
         object: ObjectId,
         visual: Option<windows_core::IUnknown>,
         completion: Callback<Result<(), IntegrationError>>,
+    },
+    /// Scrolls a `TreeView` as little as it takes to show the node with `text`.
+    ScrollTreeNodeIntoView {
+        object: ObjectId,
+        text: Rc<str>,
+    },
+    /// Scrolls a `TreeView` to `offset` DIPs from its top, once its nodes are laid out.
+    ScrollTreeTo {
+        object: ObjectId,
+        offset: f64,
     },
 }
 

@@ -3029,6 +3029,8 @@ impl From<Slider> for View {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct TreeView(Declaration);
+impl Sealed for TreeView {}
+impl ReferenceElement for TreeView {}
 impl TreeView {
     pub fn new() -> Self {
         let declaration = Declaration::new(ObjectType::TreeView);
@@ -3041,6 +3043,7 @@ impl TreeView {
         self
     }
     enabled_methods!();
+    reference_methods!(TreeView);
     visual_methods!();
     /// Rejects values outside this relation's generated type contract.
     ///
@@ -3064,6 +3067,27 @@ impl TreeView {
         self.0 = self.0.event(
             EventId::ItemInvoked,
             EventValue::String(callback.into_payload_callback()),
+        );
+        self
+    }
+    pub fn on_expanding(mut self, callback: impl IntoPayloadCallback<Rc<str>>) -> Self {
+        self.0 = self.0.event(
+            EventId::Expanding,
+            EventValue::String(callback.into_payload_callback()),
+        );
+        self
+    }
+    pub fn on_collapsed(mut self, callback: impl IntoPayloadCallback<Rc<str>>) -> Self {
+        self.0 = self.0.event(
+            EventId::Collapsed,
+            EventValue::String(callback.into_payload_callback()),
+        );
+        self
+    }
+    pub fn on_view_changed(mut self, callback: impl IntoPayloadCallback<f64>) -> Self {
+        self.0 = self.0.event(
+            EventId::ViewChanged,
+            EventValue::F64(callback.into_payload_callback()),
         );
         self
     }

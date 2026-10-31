@@ -14,74 +14,188 @@ impl WinUiAdapter {
         if self.handles.contains_key(&object) {
             return Err(WinUiError::DuplicateObject(object));
         }
-        let handle = if let Some(handle) = GeneratedHandle::create(kind, object, &self.event_queue)?
-        {
-            if let GeneratedHandle::ListView(list) = &handle {
-                list.value
-                    .cast::<native::IItemsControl>()?
-                    .SetItemTemplate(&self.list_template()?)?;
-            }
-            Handle::Generated(handle)
-        } else {
-            match kind {
-                ObjectType::TreeView => {
-                    let value = native::TreeView::new()?;
-                    let template = self.tree_template()?;
-                    value
-                        .cast::<native::ITreeView2>()?
-                        .SetItemTemplate(&template)?;
-                    let item_invoked = Rc::new(RefCell::new(NativeStringEvent::default()));
-                    let item_event = Rc::clone(&item_invoked);
-                    let item_queue = Rc::clone(&self.event_queue);
-                    let item_texts = Rc::clone(&self.tree_node_texts);
-                    let _item_invoked = value.ItemInvoked(move |_, args| {
-                        let args = args.unwrap();
-                        let node = args
-                            .InvokedItem()
-                            .and_then(|value| value.cast::<native::ITreeViewNode>())
-                            .unwrap();
-                        let identity = com_identity(&node).unwrap();
-                        let value = item_texts.borrow().get(&identity).cloned().unwrap();
-                        Self::dispatch(
-                            &item_event,
-                            &item_queue,
-                            object,
-                            EventId::ItemInvoked,
-                            None,
-                            value,
+        let handle =
+            if let Some(handle) = GeneratedHandle::create(kind, object, &self.event_queue)? {
+                if let GeneratedHandle::ListView(list) = &handle {
+                    list.value
+                        .cast::<native::IItemsControl>()?
+                        .SetItemTemplate(&self.list_template()?)?;
+                }
+                Handle::Generated(handle)
+            } else {
+                match kind {
+                    ObjectType::TreeView => {
+                        let value = native::TreeView::new()?;
+                        let template = self.tree_template()?;
+                        value
+                            .cast::<native::ITreeView2>()?
+                            .SetItemTemplate(&template)?;
+                        let item_invoked = Rc::new(RefCell::new(NativeStringEvent::default()));
+                        let item_event = Rc::clone(&item_invoked);
+                        let item_queue = Rc::clone(&self.event_queue);
+                        let item_texts = Rc::clone(&self.tree_node_texts);
+                        let _item_invoked = value.ItemInvoked(move |_, args| {
+                            let args = args.unwrap();
+                            let node = args
+                                .InvokedItem()
+                                .and_then(|value| value.cast::<native::ITreeViewNode>())
+                                .unwrap();
+                            let identity = com_identity(&node).unwrap();
+                            let value = item_texts.borrow().get(&identity).cloned().unwrap();
+                            Self::dispatch(
+                                &item_event,
+                                &item_queue,
+                                object,
+                                EventId::ItemInvoked,
+                                None,
+                                value,
+                            );
+                        })?;
+                        let node_text =
+                            |texts: &Rc<RefCell<HashMap<usize, Rc<str>>>>,
+                             node: native::TreeViewNode| {
+                                let identity = com_identity(&node).ok()?;
+                                texts.borrow().get(&identity).cloned()
+                            };
+                        let expanding = Rc::new(RefCell::new(NativeStringEvent::default()));
+                        let (expanding_event, expanding_queue, expanding_texts) = (
+                            Rc::clone(&expanding),
+                            Rc::clone(&self.event_queue),
+                            Rc::clone(&self.tree_node_texts),
                         );
-                    })?;
-                    Handle::TreeView(NativeTreeView {
-                        value,
-                        item_invoked,
-                        _item_invoked,
-                    })
+                        let _expanding = value.Expanding(move |_, args| {
+                            let Some(text) = args
+                                .as_ref()
+                                .and_then(|args| args.Node().ok())
+                                .and_then(|node| node_text(&expanding_texts, node))
+                            else {
+                                return;
+                            };
+                            Self::dispatch(
+                                &expanding_event,
+                                &expanding_queue,
+                                object,
+                                EventId::Expanding,
+                                None,
+                                text,
+                            );
+                        })?;
+                        let collapsed = Rc::new(RefCell::new(NativeStringEvent::default()));
+                        let (collapsed_event, collapsed_queue, collapsed_texts) = (
+                            Rc::clone(&collapsed),
+                            Rc::clone(&self.event_queue),
+                            Rc::clone(&self.tree_node_texts),
+                        );
+                        let _collapsed = value.Collapsed(move |_, args| {
+                            let Some(text) = args
+                                .as_ref()
+                                .and_then(|args| args.Node().ok())
+                                .and_then(|node| node_text(&collapsed_texts, node))
+                            else {
+                                return;
+                            };
+                            Self::dispatch(
+                                &collapsed_event,
+                                &collapsed_queue,
+                                object,
+                                EventId::Collapsed,
+                                None,
+                                text,
+                            );
+                        })?;
+                        // The template's ScrollViewer exists only once the tree is loaded.
+                        let view_changed = Rc::new(RefCell::new(NativeF64Event::default()));
+                        let scroll_viewer = Rc::new(RefCell::new(None));
+                        let (scroll_event, scroll_queue, scroll_slot) = (
+                            Rc::clone(&view_changed),
+                            Rc::clone(&self.event_queue),
+                            Rc::clone(&scroll_viewer),
+                        );
+                        let _loaded = value.cast::<native::IFrameworkElement>()?.Loaded(
+                            move |sender, _| {
+                                if scroll_slot.borrow().is_some() {
+                                    return;
+                                }
+                                let Some(viewer) = sender
+                                    .as_ref()
+                                    .and_then(|sender| {
+                                        sender.cast::<native::DependencyObject>().ok()
+                                    })
+                                    .and_then(|root| {
+                                        find_descendant::<native::ScrollViewer>(&root)
+                                    })
+                                else {
+                                    return;
+                                };
+                                let (event, queue) =
+                                    (Rc::clone(&scroll_event), Rc::clone(&scroll_queue));
+                                let revoker = viewer.ViewChanged(move |sender, args| {
+                                    if args
+                                        .as_ref()
+                                        .is_some_and(|args| args.IsIntermediate().unwrap_or(false))
+                                    {
+                                        return;
+                                    }
+                                    if let Some(offset) = sender
+                                        .as_ref()
+                                        .and_then(|viewer| {
+                                            viewer.cast::<native::IScrollViewer>().ok()
+                                        })
+                                        .and_then(|viewer| viewer.VerticalOffset().ok())
+                                    {
+                                        Self::dispatch(
+                                            &event,
+                                            &queue,
+                                            object,
+                                            EventId::ViewChanged,
+                                            None,
+                                            offset,
+                                        );
+                                    }
+                                });
+                                if let Ok(revoker) = revoker {
+                                    *scroll_slot.borrow_mut() = Some((viewer, revoker));
+                                }
+                            },
+                        )?;
+                        Handle::TreeView(NativeTreeView {
+                            value,
+                            item_invoked,
+                            expanding,
+                            collapsed,
+                            view_changed,
+                            scroll_viewer,
+                            _item_invoked,
+                            _expanding,
+                            _collapsed,
+                            _loaded,
+                        })
+                    }
+                    ObjectType::TreeNode => {
+                        let value = native::TreeViewNode::new()?;
+                        self.tree_node_texts
+                            .borrow_mut()
+                            .insert(com_identity(&value)?, Rc::from(""));
+                        Handle::TreeNode(NativeTreeNode {
+                            value,
+                            text: HSTRING::new(),
+                            content: None,
+                        })
+                    }
+                    ObjectType::DataItem => {
+                        let values = BTreeMap::from([
+                            (self.data_text_key.clone(), Some(data_string(""))),
+                            (self.data_content_key.clone(), None),
+                            (
+                                self.data_text_visibility_key.clone(),
+                                Some(data_string("Visible")),
+                            ),
+                        ]);
+                        Handle::Data(values.into())
+                    }
+                    _ => unreachable!("generated object was not created"),
                 }
-                ObjectType::TreeNode => {
-                    let value = native::TreeViewNode::new()?;
-                    self.tree_node_texts
-                        .borrow_mut()
-                        .insert(com_identity(&value)?, Rc::from(""));
-                    Handle::TreeNode(NativeTreeNode {
-                        value,
-                        text: HSTRING::new(),
-                        content: None,
-                    })
-                }
-                ObjectType::DataItem => {
-                    let values = BTreeMap::from([
-                        (self.data_text_key.clone(), Some(data_string(""))),
-                        (self.data_content_key.clone(), None),
-                        (
-                            self.data_text_visibility_key.clone(),
-                            Some(data_string("Visible")),
-                        ),
-                    ]);
-                    Handle::Data(values.into())
-                }
-                _ => unreachable!("generated object was not created"),
-            }
-        };
+            };
         self.handles.insert(object, handle);
         if kind == ObjectType::ContentDialog {
             let Some(Handle::Generated(GeneratedHandle::ContentDialog(value))) =

@@ -575,6 +575,7 @@ payload = "NewValue"
 name = "TreeView"
 enabled = true
 handwritten = true
+reference = true
 
 [[objects.properties]]
 name = "SelectionMode"
@@ -582,6 +583,20 @@ name = "SelectionMode"
 [[objects.events]]
 name = "ItemInvoked"
 adapter = "item_tag"
+
+# A node the user (or the app) opens or closes: its text, like `ItemInvoked`.
+[[objects.events]]
+name = "Expanding"
+adapter = "item_tag"
+
+[[objects.events]]
+name = "Collapsed"
+adapter = "item_tag"
+
+# The tree's scroll position settled (its vertical offset, in DIPs).
+[[objects.events]]
+name = "ViewChanged"
+value = "F64"
 
 [[objects.relations]]
 name = "Roots"

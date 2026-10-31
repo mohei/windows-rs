@@ -100,7 +100,7 @@ Microsoft::UI::Xaml::Controls::IInfoBarClosedEventArgs::get_Reason
 Microsoft::UI::Xaml::Controls::IItemContainer::get_IsSelected
 Microsoft::UI::Xaml::Controls::IItemsControl::{get_Items, put_ItemTemplate}
 Microsoft::UI::Xaml::Controls::IItemsRepeater::{put_ItemsSource, put_ItemTemplate}
-Microsoft::UI::Xaml::Controls::IListViewBase::{add_DragItemsCompleted, remove_DragItemsCompleted}
+Microsoft::UI::Xaml::Controls::IListViewBase::{add_DragItemsCompleted, remove_DragItemsCompleted, ScrollIntoView}
 Microsoft::UI::Xaml::Controls::Image::CreateInstance
 Microsoft::UI::Xaml::Controls::ImageIcon::CreateInstance
 Microsoft::UI::Xaml::Controls::ImageIconSource::CreateInstance
@@ -151,7 +151,9 @@ Microsoft::UI::Xaml::Controls::ITimePickerSelectedValueChangedEventArgs::get_New
 Microsoft::UI::Xaml::Controls::ITitleBar::{add_BackRequested, add_PaneToggleRequested, get_TemplateSettings, put_Content, put_IconSource, put_LeftHeader, put_RightHeader, remove_BackRequested, remove_PaneToggleRequested}
 Microsoft::UI::Xaml::Controls::ITitleBarTemplateSettings::get_IconElement
 Microsoft::UI::Xaml::Controls::IToggleSwitch::{add_Toggled, get_IsOn, put_Header, put_OffContent, put_OnContent, remove_Toggled}
-Microsoft::UI::Xaml::Controls::ITreeView::{add_ItemInvoked, get_RootNodes, remove_ItemInvoked}
+Microsoft::UI::Xaml::Controls::ITreeView::{add_Collapsed, add_Expanding, add_ItemInvoked, get_RootNodes, remove_Collapsed, remove_Expanding, remove_ItemInvoked}
+Microsoft::UI::Xaml::Controls::ITreeViewCollapsedEventArgs::get_Node
+Microsoft::UI::Xaml::Controls::ITreeViewExpandingEventArgs::get_Node
 Microsoft::UI::Xaml::Controls::ITreeView2::put_ItemTemplate
 Microsoft::UI::Xaml::Controls::ITreeViewItemInvokedEventArgs::get_InvokedItem
 Microsoft::UI::Xaml::Controls::ITreeViewNode::{get_Children, put_Content, put_IsExpanded}
@@ -198,6 +200,8 @@ Microsoft::UI::Xaml::Controls::RichTextBlock::CreateInstance
 Microsoft::UI::Xaml::Controls::RowDefinition::CreateInstance
 Microsoft::UI::Xaml::Controls::RowDefinitionCollection::{}
 Microsoft::UI::Xaml::Controls::ScrollView::CreateInstance
+Microsoft::UI::Xaml::Controls::IScrollViewer::{add_ViewChanged, ChangeViewWithOptionalAnimation, get_VerticalOffset, remove_ViewChanged}
+Microsoft::UI::Xaml::Controls::IScrollViewerViewChangedEventArgs::get_IsIntermediate
 Microsoft::UI::Xaml::Controls::ScrollViewer::CreateInstance
 Microsoft::UI::Xaml::Controls::SelectorBar::CreateInstance
 Microsoft::UI::Xaml::Controls::SelectorBarItem::CreateInstance
@@ -268,7 +272,7 @@ Microsoft::UI::Xaml::IResourceDictionary::get_MergedDictionaries
 Microsoft::UI::Xaml::IRoutedEventArgs::get_OriginalSource
 Microsoft::UI::Xaml::IScalarTransition::put_Duration
 Microsoft::UI::Xaml::ISizeChangedEventArgs::get_NewSize
-Microsoft::UI::Xaml::IUIElement::{add_CharacterReceived, add_DragEnter, add_DragLeave, add_DragOver, add_Drop, add_GotFocus, add_KeyUp, add_LostFocus, add_PointerCanceled, add_PointerCaptureLost, add_PointerEntered, add_PointerExited, add_PointerMoved, add_PointerPressed, add_PointerReleased, add_PreviewKeyDown, CapturePointer, Focus, get_FocusState, get_KeyboardAccelerators, get_PointerCaptures, get_XamlRoot, Measure, put_AllowDrop, put_CenterPoint, put_ContextFlyout, put_IsTabStop, put_KeyboardAcceleratorPlacementMode, put_Opacity, put_OpacityTransition, put_Scale, put_ScaleTransition, put_Translation, put_TranslationTransition, put_XamlRoot, ReleasePointerCapture, remove_CharacterReceived, remove_DragEnter, remove_DragLeave, remove_DragOver, remove_Drop, remove_GotFocus, remove_KeyUp, remove_LostFocus, remove_PointerCanceled, remove_PointerCaptureLost, remove_PointerEntered, remove_PointerExited, remove_PointerMoved, remove_PointerPressed, remove_PointerReleased, remove_PreviewKeyDown}
+Microsoft::UI::Xaml::IUIElement::{add_CharacterReceived, add_DragEnter, add_DragLeave, add_DragOver, add_Drop, add_GotFocus, add_KeyUp, add_LostFocus, add_PointerCanceled, add_PointerCaptureLost, add_PointerEntered, add_PointerExited, add_PointerMoved, add_PointerPressed, add_PointerReleased, add_PreviewKeyDown, CapturePointer, Focus, get_FocusState, get_KeyboardAccelerators, get_PointerCaptures, get_XamlRoot, Measure, put_AllowDrop, put_CenterPoint, put_ContextFlyout, put_IsTabStop, put_KeyboardAcceleratorPlacementMode, put_Opacity, put_OpacityTransition, put_Scale, put_ScaleTransition, put_Translation, put_TranslationTransition, put_XamlRoot, ReleasePointerCapture, remove_CharacterReceived, remove_DragEnter, remove_DragLeave, remove_DragOver, remove_Drop, remove_GotFocus, remove_KeyUp, remove_LostFocus, remove_PointerCanceled, remove_PointerCaptureLost, remove_PointerEntered, remove_PointerExited, remove_PointerMoved, remove_PointerPressed, remove_PointerReleased, remove_PreviewKeyDown, UpdateLayout}
 Microsoft::UI::Xaml::IVector3Transition::put_Duration
 Microsoft::UI::Xaml::IWindow::{Activate, add_Closed, Close, put_Content, put_ExtendsContentIntoTitleBar, put_Title, remove_Closed, SetTitleBar}
 Microsoft::UI::Xaml::IWindow2::{get_AppWindow, put_SystemBackdrop}

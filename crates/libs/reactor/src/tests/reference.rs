@@ -470,3 +470,56 @@ fn duplicate_references_panic() {
         Button::new().element_ref(&reference).into(),
     ]));
 }
+
+#[test]
+fn tree_view_reference_queues_scroll_requests_after_its_nodes() {
+    let reference = ElementRef::<TreeView>::new();
+    assert!(
+        !reference.request_scroll_to(10.0),
+        "unbound references must not queue a scroll"
+    );
+    let mut runtime = Runtime::new(RecordingAdapter::default());
+    runtime.update(
+        TreeView::new()
+            .element_ref(&reference)
+            .on_expanding(|_| {})
+            .on_collapsed(|_| {})
+            .on_view_changed(|_| {})
+            .nodes([TreeNode::new("a", "A")]),
+    );
+    let tree = reference.get().unwrap();
+    let events: Vec<EventId> = runtime
+        .graph()
+        .events(tree)
+        .unwrap()
+        .iter()
+        .map(|event| event.id)
+        .collect();
+    for id in [EventId::Expanding, EventId::Collapsed, EventId::ViewChanged] {
+        assert!(events.contains(&id), "{id:?} is declared");
+    }
+    assert!(reference.request_scroll_node_into_view("A"));
+    assert!(reference.request_scroll_to(24.0));
+    runtime.dispatch_native_events();
+    let requests: Vec<_> = runtime
+        .adapter()
+        .imperatives()
+        .iter()
+        .filter_map(|request| match request {
+            ImperativeRequest::ScrollTreeNodeIntoView { object, text } => {
+                Some((*object, format!("into view {text}")))
+            }
+            ImperativeRequest::ScrollTreeTo { object, offset } => {
+                Some((*object, format!("to {offset}")))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        requests,
+        [
+            (tree, "into view A".to_string()),
+            (tree, "to 24".to_string())
+        ]
+    );
+}

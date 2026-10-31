@@ -407,14 +407,28 @@ impl WinUiAdapter {
                     .unwrap_or(Err(WinUiError::InvalidObject(object)));
             }
             Handle::TreeView(value) => {
-                let mut native_event = value.item_invoked.borrow_mut();
-                if clear.contains(&EventId::ItemInvoked) {
-                    native_event.set(None);
+                for id in clear {
+                    match id {
+                        EventId::ItemInvoked => value.item_invoked.borrow_mut().set(None),
+                        EventId::Expanding => value.expanding.borrow_mut().set(None),
+                        EventId::Collapsed => value.collapsed.borrow_mut().set(None),
+                        EventId::ViewChanged => value.view_changed.borrow_mut().set(None),
+                        _ => {}
+                    }
                 }
                 for event in set {
                     match (event.id, &event.value) {
                         (EventId::ItemInvoked, EventValue::String(callback)) => {
-                            native_event.set(Some(callback.clone()));
+                            value.item_invoked.borrow_mut().set(Some(callback.clone()));
+                        }
+                        (EventId::Expanding, EventValue::String(callback)) => {
+                            value.expanding.borrow_mut().set(Some(callback.clone()));
+                        }
+                        (EventId::Collapsed, EventValue::String(callback)) => {
+                            value.collapsed.borrow_mut().set(Some(callback.clone()));
+                        }
+                        (EventId::ViewChanged, EventValue::F64(callback)) => {
+                            value.view_changed.borrow_mut().set(Some(callback.clone()));
                         }
                         _ => return Err(WinUiError::InvalidEvent(object, event.id)),
                     }

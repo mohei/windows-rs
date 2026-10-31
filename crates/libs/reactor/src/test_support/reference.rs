@@ -19,7 +19,9 @@ impl ImperativeRequest {
             | Self::ObserveImageScale { object, .. }
             | Self::ObserveCompositionHost { object, .. }
             | Self::RevokeObservation { object, .. }
-            | Self::SetCompositionChildVisual { object, .. } => *object,
+            | Self::SetCompositionChildVisual { object, .. }
+            | Self::ScrollTreeNodeIntoView { object, .. }
+            | Self::ScrollTreeTo { object, .. } => *object,
         }
     }
 }

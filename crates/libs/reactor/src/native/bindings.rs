@@ -12232,6 +12232,18 @@ impl IListViewBase {
             ))
         }
     }
+    pub(crate) fn ScrollIntoView<P0>(&self, item: P0) -> windows_core::Result<()>
+    where
+        P0: windows_core::Param<windows_core::IInspectable>,
+    {
+        unsafe {
+            (windows_core::Interface::vtable(self).ScrollIntoView)(
+                windows_core::Interface::as_raw(self),
+                item.param().abi(),
+            )
+            .ok()
+        }
+    }
 }
 #[repr(C)]
 pub struct IListViewBase_Vtbl {
@@ -12273,6 +12285,16 @@ pub struct IListViewBase_Vtbl {
     ) -> windows_core::HRESULT,
     pub RemoveDragItemsCompleted:
         unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+    ContainerContentChanging: usize,
+    RemoveContainerContentChanging: usize,
+    ChoosingItemContainer: usize,
+    RemoveChoosingItemContainer: usize,
+    ChoosingGroupHeaderContainer: usize,
+    RemoveChoosingGroupHeaderContainer: usize,
+    pub ScrollIntoView: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
     IListViewBaseStatics,
@@ -15809,9 +15831,173 @@ impl windows_core::RuntimeType for IScrollViewer {
     const SIGNATURE: windows_core::imp::ConstBuffer =
         windows_core::imp::ConstBuffer::for_interface::<Self>();
 }
+impl IScrollViewer {
+    pub(crate) fn VerticalOffset(&self) -> windows_core::Result<f64> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).VerticalOffset)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+    pub(crate) fn ViewChanged<F>(
+        &self,
+        handler: F,
+    ) -> windows_core::Result<windows_core::EventRevoker>
+    where
+        F: Fn(
+                windows_core::Ref<windows_core::IInspectable>,
+                windows_core::Ref<ScrollViewerViewChangedEventArgs>,
+            ) + 'static,
+    {
+        let handler: EventHandler<ScrollViewerViewChangedEventArgs> = {
+            let com = windows_core::imp::DelegateBox::<
+                EventHandler<ScrollViewerViewChangedEventArgs>,
+                F,
+            >::new(
+                &EventHandlerBox::<ScrollViewerViewChangedEventArgs, F>::VTABLE,
+                handler,
+            );
+            unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+        };
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            let token__ = (windows_core::Interface::vtable(self).ViewChanged)(
+                windows_core::Interface::as_raw(self),
+                windows_core::Interface::as_raw(&handler),
+                &mut result__,
+            )
+            .map(|| result__)?;
+            Ok(windows_core::EventRevoker::new(
+                self.clone(),
+                token__,
+                windows_core::Interface::vtable(self).RemoveViewChanged,
+            ))
+        }
+    }
+    pub(crate) fn ChangeViewWithOptionalAnimation(
+        &self,
+        horizontaloffset: Option<f64>,
+        verticaloffset: Option<f64>,
+        zoomfactor: Option<f32>,
+        disableanimation: bool,
+    ) -> windows_core::Result<bool> {
+        let horizontaloffset__ =
+            horizontaloffset.map(<windows_reference::IReference<f64> as From<_>>::from);
+        let verticaloffset__ =
+            verticaloffset.map(<windows_reference::IReference<f64> as From<_>>::from);
+        let zoomfactor__ = zoomfactor.map(<windows_reference::IReference<f32> as From<_>>::from);
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).ChangeViewWithOptionalAnimation)(
+                windows_core::Interface::as_raw(self),
+                windows_core::Param::param(horizontaloffset__.as_ref()).abi(),
+                windows_core::Param::param(verticaloffset__.as_ref()).abi(),
+                windows_core::Param::param(zoomfactor__.as_ref()).abi(),
+                disableanimation,
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+}
 #[repr(C)]
 pub struct IScrollViewer_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
+    HorizontalScrollBarVisibility: usize,
+    SetHorizontalScrollBarVisibility: usize,
+    VerticalScrollBarVisibility: usize,
+    SetVerticalScrollBarVisibility: usize,
+    IsHorizontalRailEnabled: usize,
+    SetIsHorizontalRailEnabled: usize,
+    IsVerticalRailEnabled: usize,
+    SetIsVerticalRailEnabled: usize,
+    IsHorizontalScrollChainingEnabled: usize,
+    SetIsHorizontalScrollChainingEnabled: usize,
+    IsVerticalScrollChainingEnabled: usize,
+    SetIsVerticalScrollChainingEnabled: usize,
+    IsZoomChainingEnabled: usize,
+    SetIsZoomChainingEnabled: usize,
+    IsScrollInertiaEnabled: usize,
+    SetIsScrollInertiaEnabled: usize,
+    IsZoomInertiaEnabled: usize,
+    SetIsZoomInertiaEnabled: usize,
+    HorizontalScrollMode: usize,
+    SetHorizontalScrollMode: usize,
+    VerticalScrollMode: usize,
+    SetVerticalScrollMode: usize,
+    ZoomMode: usize,
+    SetZoomMode: usize,
+    HorizontalSnapPointsAlignment: usize,
+    SetHorizontalSnapPointsAlignment: usize,
+    VerticalSnapPointsAlignment: usize,
+    SetVerticalSnapPointsAlignment: usize,
+    HorizontalSnapPointsType: usize,
+    SetHorizontalSnapPointsType: usize,
+    VerticalSnapPointsType: usize,
+    SetVerticalSnapPointsType: usize,
+    ZoomSnapPointsType: usize,
+    SetZoomSnapPointsType: usize,
+    HorizontalOffset: usize,
+    ViewportWidth: usize,
+    ScrollableWidth: usize,
+    ComputedHorizontalScrollBarVisibility: usize,
+    ExtentWidth: usize,
+    pub VerticalOffset:
+        unsafe extern "system" fn(*mut core::ffi::c_void, *mut f64) -> windows_core::HRESULT,
+    ViewportHeight: usize,
+    ScrollableHeight: usize,
+    ComputedVerticalScrollBarVisibility: usize,
+    ExtentHeight: usize,
+    MinZoomFactor: usize,
+    SetMinZoomFactor: usize,
+    MaxZoomFactor: usize,
+    SetMaxZoomFactor: usize,
+    ZoomFactor: usize,
+    ZoomSnapPoints: usize,
+    TopLeftHeader: usize,
+    SetTopLeftHeader: usize,
+    LeftHeader: usize,
+    SetLeftHeader: usize,
+    TopHeader: usize,
+    SetTopHeader: usize,
+    ReduceViewportForCoreInputViewOcclusions: usize,
+    SetReduceViewportForCoreInputViewOcclusions: usize,
+    HorizontalAnchorRatio: usize,
+    SetHorizontalAnchorRatio: usize,
+    VerticalAnchorRatio: usize,
+    SetVerticalAnchorRatio: usize,
+    CanContentRenderOutsideBounds: usize,
+    SetCanContentRenderOutsideBounds: usize,
+    AnchorRequested: usize,
+    RemoveAnchorRequested: usize,
+    ViewChanging: usize,
+    RemoveViewChanging: usize,
+    pub ViewChanged: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut i64,
+    ) -> windows_core::HRESULT,
+    pub RemoveViewChanged:
+        unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+    DirectManipulationStarted: usize,
+    RemoveDirectManipulationStarted: usize,
+    DirectManipulationCompleted: usize,
+    RemoveDirectManipulationCompleted: usize,
+    ScrollToHorizontalOffset: usize,
+    ScrollToVerticalOffset: usize,
+    ZoomToFactor: usize,
+    ChangeView: usize,
+    pub ChangeViewWithOptionalAnimation: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        bool,
+        *mut bool,
+    ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
     IScrollViewerStatics,
@@ -15862,6 +16048,33 @@ pub struct IScrollViewerStatics_Vtbl {
         *mut *mut core::ffi::c_void,
     )
         -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    IScrollViewerViewChangedEventArgs,
+    IScrollViewerViewChangedEventArgs_Vtbl,
+    0xbf7bb85b_1d46_5004_a370_ecb626630588
+);
+impl windows_core::RuntimeType for IScrollViewerViewChangedEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+impl IScrollViewerViewChangedEventArgs {
+    pub(crate) fn IsIntermediate(&self) -> windows_core::Result<bool> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).IsIntermediate)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+}
+#[repr(C)]
+pub struct IScrollViewerViewChangedEventArgs_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub IsIntermediate:
+        unsafe extern "system" fn(*mut core::ffi::c_void, *mut bool) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
     ISelectionChangedEventArgs,
@@ -19339,6 +19552,70 @@ impl ITreeView {
             ))
         }
     }
+    pub(crate) fn Expanding<F>(
+        &self,
+        handler: F,
+    ) -> windows_core::Result<windows_core::EventRevoker>
+    where
+        F: Fn(windows_core::Ref<TreeView>, windows_core::Ref<TreeViewExpandingEventArgs>) + 'static,
+    {
+        let handler: TypedEventHandler<TreeView, TreeViewExpandingEventArgs> = {
+            let com = windows_core::imp::DelegateBox::<
+                TypedEventHandler<TreeView, TreeViewExpandingEventArgs>,
+                F,
+            >::new(
+                &TypedEventHandlerBox::<TreeView, TreeViewExpandingEventArgs, F>::VTABLE,
+                handler,
+            );
+            unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+        };
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            let token__ = (windows_core::Interface::vtable(self).Expanding)(
+                windows_core::Interface::as_raw(self),
+                windows_core::Interface::as_raw(&handler),
+                &mut result__,
+            )
+            .map(|| result__)?;
+            Ok(windows_core::EventRevoker::new(
+                self.clone(),
+                token__,
+                windows_core::Interface::vtable(self).RemoveExpanding,
+            ))
+        }
+    }
+    pub(crate) fn Collapsed<F>(
+        &self,
+        handler: F,
+    ) -> windows_core::Result<windows_core::EventRevoker>
+    where
+        F: Fn(windows_core::Ref<TreeView>, windows_core::Ref<TreeViewCollapsedEventArgs>) + 'static,
+    {
+        let handler: TypedEventHandler<TreeView, TreeViewCollapsedEventArgs> = {
+            let com = windows_core::imp::DelegateBox::<
+                TypedEventHandler<TreeView, TreeViewCollapsedEventArgs>,
+                F,
+            >::new(
+                &TypedEventHandlerBox::<TreeView, TreeViewCollapsedEventArgs, F>::VTABLE,
+                handler,
+            );
+            unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+        };
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            let token__ = (windows_core::Interface::vtable(self).Collapsed)(
+                windows_core::Interface::as_raw(self),
+                windows_core::Interface::as_raw(&handler),
+                &mut result__,
+            )
+            .map(|| result__)?;
+            Ok(windows_core::EventRevoker::new(
+                self.clone(),
+                token__,
+                windows_core::Interface::vtable(self).RemoveCollapsed,
+            ))
+        }
+    }
 }
 #[repr(C)]
 pub struct ITreeView_Vtbl {
@@ -19359,6 +19636,20 @@ pub struct ITreeView_Vtbl {
         *mut i64,
     ) -> windows_core::HRESULT,
     pub RemoveItemInvoked:
+        unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+    pub Expanding: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut i64,
+    ) -> windows_core::HRESULT,
+    pub RemoveExpanding:
+        unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+    pub Collapsed: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut i64,
+    ) -> windows_core::HRESULT,
+    pub RemoveCollapsed:
         unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
@@ -19399,6 +19690,64 @@ pub struct ITreeView2_Vtbl {
     pub SetItemTemplate: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    ITreeViewCollapsedEventArgs,
+    ITreeViewCollapsedEventArgs_Vtbl,
+    0x8ee00b59_42c6_5d73_809f_68710088e5a5
+);
+impl windows_core::RuntimeType for ITreeViewCollapsedEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+impl ITreeViewCollapsedEventArgs {
+    pub(crate) fn Node(&self) -> windows_core::Result<TreeViewNode> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).Node)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        }
+    }
+}
+#[repr(C)]
+pub struct ITreeViewCollapsedEventArgs_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub Node: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    ITreeViewExpandingEventArgs,
+    ITreeViewExpandingEventArgs_Vtbl,
+    0xbd769ef7_cadc_5334_93ad_c9bbe820643d
+);
+impl windows_core::RuntimeType for ITreeViewExpandingEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+impl ITreeViewExpandingEventArgs {
+    pub(crate) fn Node(&self) -> windows_core::Result<TreeViewNode> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).Node)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        }
+    }
+}
+#[repr(C)]
+pub struct ITreeViewExpandingEventArgs_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub Node: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
@@ -20251,6 +20600,14 @@ impl IUIElement {
             .ok()
         }
     }
+    pub(crate) fn UpdateLayout(&self) -> windows_core::Result<()> {
+        unsafe {
+            (windows_core::Interface::vtable(self).UpdateLayout)(windows_core::Interface::as_raw(
+                self,
+            ))
+            .ok()
+        }
+    }
     pub(crate) fn Focus(&self, value: FocusState) -> windows_core::Result<bool> {
         unsafe {
             let mut result__ = core::mem::zeroed();
@@ -20600,7 +20957,7 @@ pub struct IUIElement_Vtbl {
     TransformToVisual: usize,
     InvalidateMeasure: usize,
     InvalidateArrange: usize,
-    UpdateLayout: usize,
+    pub UpdateLayout: unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
     CancelDirectManipulations: usize,
     StartDragAsync: usize,
     StartBringIntoView: usize,
@@ -26692,6 +27049,34 @@ impl windows_core::RuntimeName for ScrollViewer {
 unsafe impl Send for ScrollViewer {}
 unsafe impl Sync for ScrollViewer {}
 #[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ScrollViewerViewChangedEventArgs(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    ScrollViewerViewChangedEventArgs,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+impl windows_core::RuntimeType for ScrollViewerViewChangedEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, IScrollViewerViewChangedEventArgs>();
+}
+unsafe impl windows_core::Interface for ScrollViewerViewChangedEventArgs {
+    type Vtable = <IScrollViewerViewChangedEventArgs as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID =
+        <IScrollViewerViewChangedEventArgs as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for ScrollViewerViewChangedEventArgs {
+    type Target = IScrollViewerViewChangedEventArgs;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for ScrollViewerViewChangedEventArgs {
+    const NAME: &'static str = "Microsoft.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs";
+}
+unsafe impl Send for ScrollViewerViewChangedEventArgs {}
+unsafe impl Sync for ScrollViewerViewChangedEventArgs {}
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ScrollingScrollBarVisibility(pub i32);
 impl ScrollingScrollBarVisibility {
@@ -29904,6 +30289,60 @@ impl windows_core::RuntimeName for TreeView {
 }
 unsafe impl Send for TreeView {}
 unsafe impl Sync for TreeView {}
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreeViewCollapsedEventArgs(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    TreeViewCollapsedEventArgs,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+impl windows_core::RuntimeType for TreeViewCollapsedEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, ITreeViewCollapsedEventArgs>();
+}
+unsafe impl windows_core::Interface for TreeViewCollapsedEventArgs {
+    type Vtable = <ITreeViewCollapsedEventArgs as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID = <ITreeViewCollapsedEventArgs as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for TreeViewCollapsedEventArgs {
+    type Target = ITreeViewCollapsedEventArgs;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for TreeViewCollapsedEventArgs {
+    const NAME: &'static str = "Microsoft.UI.Xaml.Controls.TreeViewCollapsedEventArgs";
+}
+unsafe impl Send for TreeViewCollapsedEventArgs {}
+unsafe impl Sync for TreeViewCollapsedEventArgs {}
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreeViewExpandingEventArgs(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    TreeViewExpandingEventArgs,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+impl windows_core::RuntimeType for TreeViewExpandingEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, ITreeViewExpandingEventArgs>();
+}
+unsafe impl windows_core::Interface for TreeViewExpandingEventArgs {
+    type Vtable = <ITreeViewExpandingEventArgs as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID = <ITreeViewExpandingEventArgs as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for TreeViewExpandingEventArgs {
+    type Target = ITreeViewExpandingEventArgs;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for TreeViewExpandingEventArgs {
+    const NAME: &'static str = "Microsoft.UI.Xaml.Controls.TreeViewExpandingEventArgs";
+}
+unsafe impl Send for TreeViewExpandingEventArgs {}
+unsafe impl Sync for TreeViewExpandingEventArgs {}
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TreeViewItemInvokedEventArgs(windows_core::IUnknown);

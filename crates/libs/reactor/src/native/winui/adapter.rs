@@ -574,6 +574,37 @@ impl WinUiAdapter {
                     Err(error) => completion.call(Err(integration_error(error))),
                 }
             }
+            ImperativeRequest::ScrollTreeNodeIntoView { object, text } => {
+                let Some(Handle::TreeView(tree)) = self.handles.get(&object) else {
+                    return Ok(());
+                };
+                let node = self.handles.values().find_map(|handle| match handle {
+                    Handle::TreeNode(node) if node.text == *text => Some(node.value.clone()),
+                    _ => None,
+                });
+                let root = tree.value.cast::<native::DependencyObject>()?;
+                if let (Some(node), Some(list)) =
+                    (node, find_descendant::<native::IListViewBase>(&root))
+                {
+                    tree.value.cast::<native::IUIElement>()?.UpdateLayout()?;
+                    list.ScrollIntoView(&node.cast::<IInspectable>()?)?;
+                }
+            }
+            ImperativeRequest::ScrollTreeTo { object, offset } => {
+                let Some(Handle::TreeView(tree)) = self.handles.get(&object) else {
+                    return Ok(());
+                };
+                let viewer = match tree.scroll_viewer.borrow().as_ref() {
+                    Some((viewer, _)) => Some(viewer.clone()),
+                    None => find_descendant::<native::ScrollViewer>(&tree.value.cast()?),
+                };
+                if let Some(viewer) = viewer {
+                    tree.value.cast::<native::IUIElement>()?.UpdateLayout()?;
+                    viewer
+                        .cast::<native::IScrollViewer>()?
+                        .ChangeViewWithOptionalAnimation(None, Some(offset), None, true)?;
+                }
+            }
             ImperativeRequest::SetSwapChain {
                 object,
                 swap_chain,

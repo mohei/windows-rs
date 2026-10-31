@@ -297,6 +297,7 @@ pub enum EventId {
     Checked,
     Click,
     Closed,
+    Collapsed,
     ColorChanged,
     CommandInvoked,
     DateChanged,
@@ -306,6 +307,7 @@ pub enum EventId {
     DragLeave,
     DragOver,
     Drop,
+    Expanding,
     GotFocus,
     ImageFailed,
     ImageOpened,
@@ -340,6 +342,7 @@ pub enum EventId {
     Toggled,
     Unchecked,
     ValueChanged,
+    ViewChanged,
 }
 pub fn object_category(kind: ObjectType) -> ObjectCategory {
     match kind {
@@ -667,10 +670,24 @@ pub fn event_contracts(kind: ObjectType) -> &'static [EventContract] {
             id: EventId::ValueChanged,
             value: ValueType::F64,
         }],
-        ObjectType::TreeView => &[EventContract {
-            id: EventId::ItemInvoked,
-            value: ValueType::String,
-        }],
+        ObjectType::TreeView => &[
+            EventContract {
+                id: EventId::ItemInvoked,
+                value: ValueType::String,
+            },
+            EventContract {
+                id: EventId::Expanding,
+                value: ValueType::String,
+            },
+            EventContract {
+                id: EventId::Collapsed,
+                value: ValueType::String,
+            },
+            EventContract {
+                id: EventId::ViewChanged,
+                value: ValueType::F64,
+            },
+        ],
         ObjectType::TreeNode => &[],
         ObjectType::ListView => &[
             EventContract {

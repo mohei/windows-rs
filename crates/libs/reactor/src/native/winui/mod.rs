@@ -38,7 +38,15 @@ enum Handle {
 struct NativeTreeView {
     value: native::TreeView,
     item_invoked: Rc<RefCell<NativeStringEvent>>,
+    expanding: Rc<RefCell<NativeStringEvent>>,
+    collapsed: Rc<RefCell<NativeStringEvent>>,
+    view_changed: Rc<RefCell<NativeF64Event>>,
+    /// The template's `ScrollViewer` and its `ViewChanged` subscription, once loaded.
+    scroll_viewer: Rc<RefCell<Option<(native::ScrollViewer, windows_core::EventRevoker)>>>,
     _item_invoked: windows_core::EventRevoker,
+    _expanding: windows_core::EventRevoker,
+    _collapsed: windows_core::EventRevoker,
+    _loaded: windows_core::EventRevoker,
 }
 
 struct NativeTreeNode {
@@ -846,3 +854,19 @@ fn set_grid_definitions(
 #[cfg(test)]
 #[path = "../../tests/native/winui.rs"]
 mod tests;
+
+/// The first element under `root`, depth first, that casts to `T` — a templated control's part
+/// (a `TreeView`'s `ScrollViewer` or its inner list).
+fn find_descendant<T: Interface>(root: &native::DependencyObject) -> Option<T> {
+    let count = native::VisualTreeHelper::GetChildrenCount(root).ok()?;
+    for index in 0..count {
+        let child = native::VisualTreeHelper::GetChild(root, index).ok()?;
+        if let Ok(found) = child.cast::<T>() {
+            return Some(found);
+        }
+        if let Some(found) = find_descendant::<T>(&child) {
+            return Some(found);
+        }
+    }
+    None
+}
