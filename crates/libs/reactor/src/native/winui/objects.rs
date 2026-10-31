@@ -63,7 +63,11 @@ impl WinUiAdapter {
                             Rc::clone(&self.event_queue),
                             Rc::clone(&self.tree_node_texts),
                         );
+                        let expanding_writes = Rc::clone(&self.tree_expansion_writes);
                         let _expanding = value.Expanding(move |_, args| {
+                            if expanding_writes.get() != 0 {
+                                return;
+                            }
                             let Some(text) = args
                                 .as_ref()
                                 .and_then(|args| args.Node().ok())
@@ -86,7 +90,11 @@ impl WinUiAdapter {
                             Rc::clone(&self.event_queue),
                             Rc::clone(&self.tree_node_texts),
                         );
+                        let collapsed_writes = Rc::clone(&self.tree_expansion_writes);
                         let _collapsed = value.Collapsed(move |_, args| {
+                            if collapsed_writes.get() != 0 {
+                                return;
+                            }
                             let Some(text) = args
                                 .as_ref()
                                 .and_then(|args| args.Node().ok())
@@ -103,7 +111,6 @@ impl WinUiAdapter {
                                 text,
                             );
                         })?;
-                        // The template's ScrollViewer exists only once the tree is loaded.
                         let view_changed = Rc::new(RefCell::new(NativeF64Event::default()));
                         // The template's `ScrollViewer` and its `ViewChanged` subscription, held by
                         // the `Loaded` handler that makes them.
@@ -117,7 +124,19 @@ impl WinUiAdapter {
                         );
                         let _loaded = value.cast::<native::IFrameworkElement>()?.Loaded(
                             move |sender, _| {
+                                // What was asked for before the template was applied — also on a
+                                // later load (a pane shown again).
+                                let carry_out_pending = || {
+                                    let pending = std::mem::take(&mut *scroll_pending.borrow_mut());
+                                    if let Some(tree) = sender
+                                        .as_ref()
+                                        .and_then(|sender| sender.cast::<native::TreeView>().ok())
+                                    {
+                                        let _ = scroll_tree(&tree, pending);
+                                    }
+                                };
                                 if scroll_slot.borrow().is_some() {
+                                    carry_out_pending();
                                     return;
                                 }
                                 let Some(viewer) = sender
@@ -160,14 +179,7 @@ impl WinUiAdapter {
                                 if let Ok(revoker) = revoker {
                                     *scroll_slot.borrow_mut() = Some((viewer, revoker));
                                 }
-                                // What was asked for before the template was applied.
-                                let pending = std::mem::take(&mut *scroll_pending.borrow_mut());
-                                if let Some(tree) = sender
-                                    .as_ref()
-                                    .and_then(|sender| sender.cast::<native::TreeView>().ok())
-                                {
-                                    let _ = scroll_tree(&tree, pending);
-                                }
+                                carry_out_pending();
                             },
                         )?;
                         Handle::TreeView(NativeTreeView {
@@ -438,6 +450,7 @@ impl WinUiAdapter {
             }
         }
         let tree_node_texts = Rc::clone(&self.tree_node_texts);
+        let tree_expansion_writes = Rc::clone(&self.tree_expansion_writes);
         match (self.handle(object)?, property, value) {
             (Handle::TreeNode(node), PropertyId::Text, None | Some(PropertyValue::String(_))) => {
                 if let Some(PropertyValue::String(text)) = value {
@@ -455,11 +468,13 @@ impl WinUiAdapter {
                 }
                 Ok(())
             }
-            (Handle::TreeNode(node), PropertyId::Expanded, None) => {
-                node.value.SetIsExpanded(false).map_err(Into::into)
-            }
-            (Handle::TreeNode(node), PropertyId::Expanded, Some(PropertyValue::Bool(expanded))) => {
-                node.value.SetIsExpanded(*expanded).map_err(Into::into)
+            (Handle::TreeNode(node), PropertyId::Expanded, value) => {
+                let expanded = matches!(value, Some(PropertyValue::Bool(true)));
+                let writes = tree_expansion_writes;
+                writes.set(writes.get() + 1);
+                let result = node.value.SetIsExpanded(expanded).map_err(Into::into);
+                writes.set(writes.get() - 1);
+                result
             }
             _ => Err(WinUiError::InvalidObject(object)),
         }

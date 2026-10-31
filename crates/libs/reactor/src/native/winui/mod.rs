@@ -65,6 +65,8 @@ fn scroll_tree(tree: &native::TreeView, scroll: PendingTreeScroll) -> Result<boo
             return Ok(false);
         };
         viewer.ChangeViewWithOptionalAnimation(None, Some(offset), None, true)?;
+        // Settle the new offset before a node is brought into view from it.
+        tree.cast::<native::IUIElement>()?.UpdateLayout()?;
     }
     if let Some(node) = scroll.node {
         let Some(list) = find_descendant::<native::IListViewBase>(&root) else {
@@ -577,6 +579,9 @@ pub struct WinUiAdapter {
     style_cache: HashMap<NativeStyleKey, native::Style>,
     pending_focus_states: Rc<RefCell<HashMap<ObjectId, ElementFocusState>>>,
     tree_node_texts: Rc<RefCell<HashMap<usize, Rc<str>>>>,
+    /// Nonzero while Reactor writes a `TreeViewNode::IsExpanded`: the `Expanding`/`Collapsed`
+    /// that write raises reports the app's own declaration, not the user, and is dropped.
+    tree_expansion_writes: Rc<Cell<u32>>,
 }
 
 struct NativeRetirement {
@@ -623,6 +628,7 @@ impl Default for WinUiAdapter {
             style_cache: HashMap::new(),
             pending_focus_states: Rc::new(RefCell::new(HashMap::new())),
             tree_node_texts: Rc::new(RefCell::new(HashMap::new())),
+            tree_expansion_writes: Rc::new(Cell::new(0)),
         }
     }
 }
