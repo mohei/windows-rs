@@ -218,7 +218,10 @@ impl WinUiAdapter {
                         items.RemoveAtEnd()?;
                     }
                 }
-                _ => return Err(WinUiError::InvalidObject(target)),
+                _ => self
+                    .ui_element(target)?
+                    .cast::<native::IUIElement>()?
+                    .SetContextFlyout(None::<&native::FlyoutBase>)?,
             }
             drop(previous);
         }
@@ -258,7 +261,23 @@ impl WinUiAdapter {
                 )?;
                 None
             }
-            _ => return Err(WinUiError::InvalidObject(target)),
+            // Any other visual opens the menu as its context flyout: right-click, touch
+            // long-press, or the Menu key.
+            _ => {
+                let flyout = native::MenuFlyout::new()?;
+                build_menu_items(
+                    &menu.items,
+                    &flyout.Items()?,
+                    &mut revokers,
+                    &self.event_queue,
+                    target,
+                    revision,
+                )?;
+                self.ui_element(target)?
+                    .cast::<native::IUIElement>()?
+                    .SetContextFlyout(&flyout)?;
+                Some(flyout)
+            }
         };
         self.menus.insert(
             target,

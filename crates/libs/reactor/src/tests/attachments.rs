@@ -397,6 +397,21 @@ fn menu_attachment_callback_updates_preserve_revision_and_click_order() {
 }
 
 #[test]
+fn menu_attaches_to_any_visual_as_a_context_menu() {
+    let menu = Menu::new([MenuItem::item("open", "Open")], |_| {});
+    let mut runtime = Runtime::new(RecordingAdapter::default());
+    runtime.update(
+        Border::new()
+            .content(TextBlock::new().text("Target"))
+            .menu(menu.clone()),
+    );
+    let root = runtime.graph().root().unwrap();
+    assert_eq!(runtime.adapter().menu(root), Some(&menu));
+    let target = runtime.graph().child(root, RelationId::Content).unwrap();
+    assert_eq!(runtime.adapter().menu(target), None);
+}
+
+#[test]
 fn menu_attachment_target_replacement_advances_lifetime() {
     let menu = Menu::new([MenuItem::item("command", "Command")], |_| {});
     let mut runtime = Runtime::new(RecordingAdapter::default());
@@ -466,12 +481,8 @@ fn command_bar_flyout_callback_updates_preserve_revision() {
 }
 
 #[test]
-fn menu_attachment_rejects_unsupported_targets_and_flyout_conflicts() {
+fn menu_attachment_rejects_flyout_conflicts() {
     let menu = || Menu::new([MenuItem::item("open", "Open")], |_| {});
-    assert_panics("invalid attachment on TextBlock", || {
-        Runtime::new(RecordingAdapter::default())
-            .update(TextBlock::new().text("Target").menu(menu()));
-    });
     assert_panics("invalid attachment on Button", || {
         Runtime::new(RecordingAdapter::default())
             .update(Button::new().menu(menu()).flyout("Flyout"));

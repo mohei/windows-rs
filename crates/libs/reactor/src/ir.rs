@@ -317,10 +317,9 @@ fn validate_object(
             );
         }
         if let Some(menu) = &attachments.menu {
-            if !matches!(
-                declaration.kind,
-                ObjectType::Button | ObjectType::DropDownButton | ObjectType::MenuBarItem
-            ) {
+            // Buttons and menu bar items open their menu on click; any other visual opens it
+            // as its context flyout.
+            if object_category(declaration.kind) != ObjectCategory::Visual {
                 invalid_attachment(declaration.kind);
             }
             validate_menu_items(&menu.menu.items, &mut HashSet::new());
