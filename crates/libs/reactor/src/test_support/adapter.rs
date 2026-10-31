@@ -1015,6 +1015,10 @@ impl Runtime<RecordingAdapter> {
     pub fn queue_realization(&mut self, request: RealizationRequest) {
         self.adapter_mut().queue_realization(request);
     }
+
+    pub fn queue_menu_click(&mut self, target: ObjectId, key: impl Into<Key>) {
+        self.adapter_mut().queue_menu_click(target, key);
+    }
 }
 
 impl ComponentHost<RecordingAdapter> {
@@ -1022,8 +1026,21 @@ impl ComponentHost<RecordingAdapter> {
         self.runtime_mut_internal().record_batches(record);
     }
 
+    pub fn complete_content_dialog(
+        &mut self,
+        dialog: ObjectId,
+        result: ContentDialogResult,
+    ) -> bool {
+        self.runtime_mut_internal()
+            .complete_content_dialog(dialog, result)
+    }
+
     pub fn queue_event(&mut self, event: EventDispatch) {
         self.runtime_mut_internal().queue_event(event);
+    }
+
+    pub fn queue_menu_click(&mut self, target: ObjectId, key: impl Into<Key>) {
+        self.runtime_mut_internal().queue_menu_click(target, key);
     }
 
     pub fn queue_realization(&mut self, request: RealizationRequest) {
