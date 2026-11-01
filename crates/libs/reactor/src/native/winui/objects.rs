@@ -51,12 +51,9 @@ impl WinUiAdapter {
                                 value,
                             );
                         })?;
-                        let node_text =
-                            |texts: &Rc<RefCell<HashMap<usize, Rc<str>>>>,
-                             node: native::TreeViewNode| {
-                                let identity = com_identity(&node).ok()?;
-                                texts.borrow().get(&identity).cloned()
-                            };
+                        let node_text = |texts: &TreeNodeTexts, node: native::TreeViewNode| {
+                            tree_node_text(texts, &node)
+                        };
                         let expanding = Rc::new(RefCell::new(NativeStringEvent::default()));
                         let (expanding_event, expanding_queue, expanding_texts) = (
                             Rc::clone(&expanding),
@@ -159,8 +156,12 @@ impl WinUiAdapter {
                                             args.ItemContainer().and_then(|container| {
                                                 container.cast::<native::DependencyObject>()
                                             });
-                                        if let (Some(text), Ok(container)) = (text, container) {
-                                            let _ = name_tree_item(&container, &text);
+                                        // A recycled container drops the name of the node it held.
+                                        if let Ok(container) = container {
+                                            let _ = name_tree_item(
+                                                &container,
+                                                text.as_deref().unwrap_or(""),
+                                            );
                                         }
                                     });
                                     if let Ok(revoker) = revoker {
@@ -497,7 +498,9 @@ impl WinUiAdapter {
         let tree_node_texts = Rc::clone(&self.tree_node_texts);
         let tree_expansion_writes = Rc::clone(&self.tree_expansion_writes);
         // A node's realized `TreeViewItem` is renamed along with its text.
-        let trees: Vec<native::TreeView> = if property == PropertyId::Text {
+        let trees: Vec<native::TreeView> = if property == PropertyId::Text
+            && matches!(self.handles.get(&object), Some(Handle::TreeNode(_)))
+        {
             self.handles
                 .values()
                 .filter_map(|handle| match handle {
@@ -517,6 +520,9 @@ impl WinUiAdapter {
                         .insert(com_identity(&node.value)?, Rc::clone(text));
                 } else {
                     node.text = HSTRING::new();
+                    tree_node_texts
+                        .borrow_mut()
+                        .insert(com_identity(&node.value)?, Rc::from(""));
                 }
                 if node.content.is_none() {
                     let content: IInspectable =
@@ -529,7 +535,7 @@ impl WinUiAdapter {
                         .cast::<native::ITreeView2>()
                         .and_then(|tree| tree.ContainerFromNode(&node.value))
                     {
-                        name_tree_item(&container, &text)?;
+                        let _ = name_tree_item(&container, &text);
                     }
                 }
                 Ok(())
@@ -808,17 +814,13 @@ pub(super) fn set_properties(
 fn name_tree_item(container: &native::DependencyObject, text: &str) -> windows_core::Result<()> {
     container.cast::<native::IDependencyObject>()?.SetValue(
         &native::AutomationProperties::NameProperty()?,
-        Some(&super::relations::data_string(text)),
+        Some(&data_string(text)),
     )
 }
 
 /// Names every `TreeViewItem` under `tree` that is already realized (`name_tree_item`).
-fn name_realized_tree_items(tree: &native::TreeView, texts: &Rc<RefCell<HashMap<usize, Rc<str>>>>) {
-    fn visit(
-        tree: &native::ITreeView2,
-        texts: &Rc<RefCell<HashMap<usize, Rc<str>>>>,
-        root: &native::DependencyObject,
-    ) {
+fn name_realized_tree_items(tree: &native::TreeView, texts: &TreeNodeTexts) {
+    fn visit(tree: &native::ITreeView2, texts: &TreeNodeTexts, root: &native::DependencyObject) {
         let Ok(count) = native::VisualTreeHelper::GetChildrenCount(root) else {
             return;
         };
@@ -826,15 +828,14 @@ fn name_realized_tree_items(tree: &native::TreeView, texts: &Rc<RefCell<HashMap<
             let Ok(child) = native::VisualTreeHelper::GetChild(root, index) else {
                 continue;
             };
-            let text = tree
-                .NodeFromContainer(&child)
-                .ok()
-                .and_then(|node| com_identity(&node).ok())
-                .and_then(|identity| texts.borrow().get(&identity).cloned());
-            if let Some(text) = text {
-                let _ = name_tree_item(&child, &text);
+            // A container's own content is not walked.
+            match tree.NodeFromContainer(&child) {
+                Ok(node) => {
+                    let text = tree_node_text(texts, &node);
+                    let _ = name_tree_item(&child, text.as_deref().unwrap_or(""));
+                }
+                Err(_) => visit(tree, texts, &child),
             }
-            visit(tree, texts, &child);
         }
     }
     if let (Ok(root), Ok(tree)) = (
@@ -843,4 +844,13 @@ fn name_realized_tree_items(tree: &native::TreeView, texts: &Rc<RefCell<HashMap<
     ) {
         visit(&tree, texts, &root);
     }
+}
+
+/// Each `TreeViewNode`'s text, by COM identity (`tree_node_text`).
+type TreeNodeTexts = Rc<RefCell<HashMap<usize, Rc<str>>>>;
+
+/// The text Reactor gave `node`.
+fn tree_node_text(texts: &TreeNodeTexts, node: &native::TreeViewNode) -> Option<Rc<str>> {
+    let identity = com_identity(node).ok()?;
+    texts.borrow().get(&identity).cloned()
 }

@@ -155,8 +155,7 @@ Microsoft::UI::Xaml::Controls::IToggleSwitch::{add_Toggled, get_IsOn, put_Header
 Microsoft::UI::Xaml::Controls::ITreeView::{add_Collapsed, add_Expanding, add_ItemInvoked, get_RootNodes, remove_Collapsed, remove_Expanding, remove_ItemInvoked}
 Microsoft::UI::Xaml::Controls::ITreeViewCollapsedEventArgs::get_Node
 Microsoft::UI::Xaml::Controls::ITreeViewExpandingEventArgs::get_Node
-Microsoft::UI::Xaml::Controls::ITreeView2::put_ItemTemplate
-Microsoft::UI::Xaml::Controls::ITreeView2::{ContainerFromNode, NodeFromContainer}
+Microsoft::UI::Xaml::Controls::ITreeView2::{ContainerFromNode, NodeFromContainer, put_ItemTemplate}
 Microsoft::UI::Xaml::Controls::ITreeViewItemInvokedEventArgs::get_InvokedItem
 Microsoft::UI::Xaml::Controls::ITreeViewNode::{get_Children, put_Content, put_IsExpanded}
 Microsoft::UI::Xaml::Controls::IViewbox::put_Child
