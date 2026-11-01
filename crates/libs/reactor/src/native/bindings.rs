@@ -2403,6 +2403,34 @@ unsafe impl Send for Compositor {}
 unsafe impl Sync for Compositor {}
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ContainerContentChangingEventArgs(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    ContainerContentChangingEventArgs,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+impl windows_core::RuntimeType for ContainerContentChangingEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, IContainerContentChangingEventArgs>();
+}
+unsafe impl windows_core::Interface for ContainerContentChangingEventArgs {
+    type Vtable = <IContainerContentChangingEventArgs as windows_core::Interface>::Vtable;
+    const IID: windows_core::GUID =
+        <IContainerContentChangingEventArgs as windows_core::Interface>::IID;
+}
+impl core::ops::Deref for ContainerContentChangingEventArgs {
+    type Target = IContainerContentChangingEventArgs;
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+impl windows_core::RuntimeName for ContainerContentChangingEventArgs {
+    const NAME: &'static str = "Microsoft.UI.Xaml.Controls.ContainerContentChangingEventArgs";
+}
+unsafe impl Send for ContainerContentChangingEventArgs {}
+unsafe impl Sync for ContainerContentChangingEventArgs {}
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ContentControl(windows_core::IUnknown);
 windows_core::imp::interface_hierarchy!(
     ContentControl,
@@ -8178,6 +8206,62 @@ pub struct ICompositor_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
 }
 windows_core::imp::define_interface!(
+    IContainerContentChangingEventArgs,
+    IContainerContentChangingEventArgs_Vtbl,
+    0xf4c8c937_b070_53ce_a76c_074ee5750a71
+);
+impl windows_core::RuntimeType for IContainerContentChangingEventArgs {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+impl IContainerContentChangingEventArgs {
+    pub(crate) fn ItemContainer(&self) -> windows_core::Result<SelectorItem> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).ItemContainer)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        }
+    }
+    pub(crate) fn InRecycleQueue(&self) -> windows_core::Result<bool> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).InRecycleQueue)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+    pub(crate) fn Item(&self) -> windows_core::Result<windows_core::IInspectable> {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).Item)(
+                windows_core::Interface::as_raw(self),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        }
+    }
+}
+#[repr(C)]
+pub struct IContainerContentChangingEventArgs_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub ItemContainer: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+    pub InRecycleQueue:
+        unsafe extern "system" fn(*mut core::ffi::c_void, *mut bool) -> windows_core::HRESULT,
+    ItemIndex: usize,
+    pub Item: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
     IContentControl,
     IContentControl_Vtbl,
     0x07e81761_11b2_52ae_8f8b_4d53d2b5900a
@@ -12232,6 +12316,41 @@ impl IListViewBase {
             ))
         }
     }
+    pub(crate) fn ContainerContentChanging<F>(
+        &self,
+        handler: F,
+    ) -> windows_core::Result<windows_core::EventRevoker>
+    where
+        F: Fn(
+                windows_core::Ref<ListViewBase>,
+                windows_core::Ref<ContainerContentChangingEventArgs>,
+            ) + 'static,
+    {
+        let handler: TypedEventHandler<ListViewBase, ContainerContentChangingEventArgs> = {
+            let com = windows_core::imp::DelegateBox::<
+                TypedEventHandler<ListViewBase, ContainerContentChangingEventArgs>,
+                F,
+            >::new(
+                &TypedEventHandlerBox::<ListViewBase, ContainerContentChangingEventArgs, F>::VTABLE,
+                handler,
+            );
+            unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+        };
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            let token__ = (windows_core::Interface::vtable(self).ContainerContentChanging)(
+                windows_core::Interface::as_raw(self),
+                windows_core::Interface::as_raw(&handler),
+                &mut result__,
+            )
+            .map(|| result__)?;
+            Ok(windows_core::EventRevoker::new(
+                self.clone(),
+                token__,
+                windows_core::Interface::vtable(self).RemoveContainerContentChanging,
+            ))
+        }
+    }
     pub(crate) fn ScrollIntoView<P0>(&self, item: P0) -> windows_core::Result<()>
     where
         P0: windows_core::Param<windows_core::IInspectable>,
@@ -12285,8 +12404,13 @@ pub struct IListViewBase_Vtbl {
     ) -> windows_core::HRESULT,
     pub RemoveDragItemsCompleted:
         unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
-    ContainerContentChanging: usize,
-    RemoveContainerContentChanging: usize,
+    pub ContainerContentChanging: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut i64,
+    ) -> windows_core::HRESULT,
+    pub RemoveContainerContentChanging:
+        unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
     ChoosingItemContainer: usize,
     RemoveChoosingItemContainer: usize,
     ChoosingGroupHeaderContainer: usize,
@@ -19662,6 +19786,34 @@ impl windows_core::RuntimeType for ITreeView2 {
         windows_core::imp::ConstBuffer::for_interface::<Self>();
 }
 impl ITreeView2 {
+    pub(crate) fn NodeFromContainer<P0>(&self, container: P0) -> windows_core::Result<TreeViewNode>
+    where
+        P0: windows_core::Param<DependencyObject>,
+    {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).NodeFromContainer)(
+                windows_core::Interface::as_raw(self),
+                container.param().abi(),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        }
+    }
+    pub(crate) fn ContainerFromNode<P0>(&self, node: P0) -> windows_core::Result<DependencyObject>
+    where
+        P0: windows_core::Param<TreeViewNode>,
+    {
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(self).ContainerFromNode)(
+                windows_core::Interface::as_raw(self),
+                node.param().abi(),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        }
+    }
     pub(crate) fn SetItemTemplate<P0>(&self, value: P0) -> windows_core::Result<()>
     where
         P0: windows_core::Param<DataTemplate>,
@@ -19678,8 +19830,16 @@ impl ITreeView2 {
 #[repr(C)]
 pub struct ITreeView2_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
-    NodeFromContainer: usize,
-    ContainerFromNode: usize,
+    pub NodeFromContainer: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+    pub ContainerFromNode: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
     ItemFromContainer: usize,
     ContainerFromItem: usize,
     CanDragItems: usize,
@@ -30489,6 +30649,19 @@ impl<TSender: windows_core::RuntimeType + 'static, TResult: windows_core::Runtim
         .push_slice(b";")
         .push_other(TResult::SIGNATURE)
         .push_slice(b")");
+}
+impl<TSender: windows_core::RuntimeType + 'static, TResult: windows_core::RuntimeType + 'static>
+    TypedEventHandler<TSender, TResult>
+{
+    pub(crate) fn new<F: Fn(windows_core::Ref<TSender>, windows_core::Ref<TResult>) + 'static>(
+        invoke: F,
+    ) -> Self {
+        let com = windows_core::imp::DelegateBox::<Self, F>::new(
+            &TypedEventHandlerBox::<TSender, TResult, F>::VTABLE,
+            invoke,
+        );
+        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+    }
 }
 #[repr(C)]
 pub struct TypedEventHandler_Vtbl<TSender, TResult>

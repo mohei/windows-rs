@@ -122,8 +122,53 @@ impl WinUiAdapter {
                             scroll_viewer,
                             Rc::clone(&pending_scroll),
                         );
+                        // The inner list's `ContainerContentChanging` subscription, made on the
+                        // first load: it names each `TreeViewItem` after its node's text as the
+                        // list realizes or recycles it.
+                        let names_slot: RefCell<
+                            Option<(native::IListViewBase, windows_core::EventRevoker)>,
+                        > = RefCell::new(None);
+                        let names_texts = Rc::clone(&self.tree_node_texts);
                         let _loaded = value.cast::<native::IFrameworkElement>()?.Loaded(
                             move |sender, _| {
+                                let tree = sender
+                                    .as_ref()
+                                    .filter(|_| names_slot.borrow().is_none())
+                                    .and_then(|sender| sender.cast::<native::TreeView>().ok());
+                                let list = tree.as_ref().and_then(|tree| {
+                                    let root = tree.cast::<native::DependencyObject>().ok()?;
+                                    find_descendant::<native::IListViewBase>(&root)
+                                });
+                                if let (Some(tree), Some(list)) = (tree, list) {
+                                    let texts = Rc::clone(&names_texts);
+                                    let revoker = list.ContainerContentChanging(move |_, args| {
+                                        let Some(args) = args.as_ref() else {
+                                            return;
+                                        };
+                                        if args.InRecycleQueue().unwrap_or(true) {
+                                            return;
+                                        }
+                                        let text = args
+                                            .Item()
+                                            .ok()
+                                            .and_then(|item| {
+                                                item.cast::<native::TreeViewNode>().ok()
+                                            })
+                                            .and_then(|node| node_text(&texts, node));
+                                        let container =
+                                            args.ItemContainer().and_then(|container| {
+                                                container.cast::<native::DependencyObject>()
+                                            });
+                                        if let (Some(text), Ok(container)) = (text, container) {
+                                            let _ = name_tree_item(&container, &text);
+                                        }
+                                    });
+                                    if let Ok(revoker) = revoker {
+                                        *names_slot.borrow_mut() = Some((list, revoker));
+                                    }
+                                    // The containers realized before the subscription.
+                                    name_realized_tree_items(&tree, &names_texts);
+                                }
                                 // What was asked for before the template was applied — also on a
                                 // later load (a pane shown again).
                                 let carry_out_pending = || {
@@ -451,6 +496,18 @@ impl WinUiAdapter {
         }
         let tree_node_texts = Rc::clone(&self.tree_node_texts);
         let tree_expansion_writes = Rc::clone(&self.tree_expansion_writes);
+        // A node's realized `TreeViewItem` is renamed along with its text.
+        let trees: Vec<native::TreeView> = if property == PropertyId::Text {
+            self.handles
+                .values()
+                .filter_map(|handle| match handle {
+                    Handle::TreeView(tree) => Some(tree.value.clone()),
+                    _ => None,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         match (self.handle(object)?, property, value) {
             (Handle::TreeNode(node), PropertyId::Text, None | Some(PropertyValue::String(_))) => {
                 if let Some(PropertyValue::String(text)) = value {
@@ -465,6 +522,15 @@ impl WinUiAdapter {
                     let content: IInspectable =
                         windows_reference::IReference::from(node.text.clone()).into();
                     node.value.SetContent(&content)?;
+                }
+                let text = node.text.to_string_lossy();
+                for tree in &trees {
+                    if let Ok(container) = tree
+                        .cast::<native::ITreeView2>()
+                        .and_then(|tree| tree.ContainerFromNode(&node.value))
+                    {
+                        name_tree_item(&container, &text)?;
+                    }
                 }
                 Ok(())
             }
@@ -734,4 +800,47 @@ pub(super) fn set_properties(
             .set_transition_properties(object, set, clear)?;
     }
     Ok(())
+}
+
+/// Names a `TreeViewItem` after its node's text. The item's own UI Automation name is otherwise
+/// its node's type name once the node's content is an element — the peer reads neither the
+/// element's name nor the node's text.
+fn name_tree_item(container: &native::DependencyObject, text: &str) -> windows_core::Result<()> {
+    container.cast::<native::IDependencyObject>()?.SetValue(
+        &native::AutomationProperties::NameProperty()?,
+        Some(&super::relations::data_string(text)),
+    )
+}
+
+/// Names every `TreeViewItem` under `tree` that is already realized (`name_tree_item`).
+fn name_realized_tree_items(tree: &native::TreeView, texts: &Rc<RefCell<HashMap<usize, Rc<str>>>>) {
+    fn visit(
+        tree: &native::ITreeView2,
+        texts: &Rc<RefCell<HashMap<usize, Rc<str>>>>,
+        root: &native::DependencyObject,
+    ) {
+        let Ok(count) = native::VisualTreeHelper::GetChildrenCount(root) else {
+            return;
+        };
+        for index in 0..count {
+            let Ok(child) = native::VisualTreeHelper::GetChild(root, index) else {
+                continue;
+            };
+            let text = tree
+                .NodeFromContainer(&child)
+                .ok()
+                .and_then(|node| com_identity(&node).ok())
+                .and_then(|identity| texts.borrow().get(&identity).cloned());
+            if let Some(text) = text {
+                let _ = name_tree_item(&child, &text);
+            }
+            visit(tree, texts, &child);
+        }
+    }
+    if let (Ok(root), Ok(tree)) = (
+        tree.cast::<native::DependencyObject>(),
+        tree.cast::<native::ITreeView2>(),
+    ) {
+        visit(&tree, texts, &root);
+    }
 }

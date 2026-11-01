@@ -100,7 +100,8 @@ Microsoft::UI::Xaml::Controls::IInfoBarClosedEventArgs::get_Reason
 Microsoft::UI::Xaml::Controls::IItemContainer::get_IsSelected
 Microsoft::UI::Xaml::Controls::IItemsControl::{get_Items, put_ItemTemplate}
 Microsoft::UI::Xaml::Controls::IItemsRepeater::{put_ItemsSource, put_ItemTemplate}
-Microsoft::UI::Xaml::Controls::IListViewBase::{add_DragItemsCompleted, remove_DragItemsCompleted, ScrollIntoView}
+Microsoft::UI::Xaml::Controls::IListViewBase::{add_ContainerContentChanging, add_DragItemsCompleted, remove_ContainerContentChanging, remove_DragItemsCompleted, ScrollIntoView}
+Microsoft::UI::Xaml::Controls::IContainerContentChangingEventArgs::{get_InRecycleQueue, get_Item, get_ItemContainer}
 Microsoft::UI::Xaml::Controls::Image::CreateInstance
 Microsoft::UI::Xaml::Controls::ImageIcon::CreateInstance
 Microsoft::UI::Xaml::Controls::ImageIconSource::CreateInstance
@@ -155,6 +156,7 @@ Microsoft::UI::Xaml::Controls::ITreeView::{add_Collapsed, add_Expanding, add_Ite
 Microsoft::UI::Xaml::Controls::ITreeViewCollapsedEventArgs::get_Node
 Microsoft::UI::Xaml::Controls::ITreeViewExpandingEventArgs::get_Node
 Microsoft::UI::Xaml::Controls::ITreeView2::put_ItemTemplate
+Microsoft::UI::Xaml::Controls::ITreeView2::{ContainerFromNode, NodeFromContainer}
 Microsoft::UI::Xaml::Controls::ITreeViewItemInvokedEventArgs::get_InvokedItem
 Microsoft::UI::Xaml::Controls::ITreeViewNode::{get_Children, put_Content, put_IsExpanded}
 Microsoft::UI::Xaml::Controls::IViewbox::put_Child
